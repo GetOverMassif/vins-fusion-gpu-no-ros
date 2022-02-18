@@ -35,9 +35,11 @@
 #include <eigen3/Eigen/Geometry>
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/opencv.hpp>
-#include <opencv2/cudaoptflow.hpp> // GPU
-#include <opencv2/cudaimgproc.hpp> // GPU
-#include <opencv2/cudaarithm.hpp> // GPU
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/imgproc/types_c.h"
+//#include <opencv2/cudaoptflow.hpp> // GPU
+//#include <opencv2/cudaimgproc.hpp> // GPU
+//#include <opencv2/cudaarithm.hpp> // GPU
 #include <Eigen/Dense>
 
 #include <iostream> // error

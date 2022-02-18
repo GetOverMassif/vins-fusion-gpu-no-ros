@@ -233,7 +233,7 @@ int main(int argc, char **argv)
           LoadImus(fImus,image_timestamp);
            
         //read image from file
-          image = cv::imread(vStrImagesFileNames[ni],CV_LOAD_IMAGE_UNCHANGED);
+          image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
           
           if(image.empty())
           {
@@ -308,8 +308,8 @@ int main(int argc, char **argv)
           LoadImus(fImus,image_timestamp); //TODO
            
           //read image from file
-          image = cv::imread(vStrImagesFileNames[ni],CV_LOAD_IMAGE_UNCHANGED);
-          image2 = cv::imread(vStrImagesFileNames2[ni],CV_LOAD_IMAGE_UNCHANGED);
+          image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
+          image2 = cv::imread(vStrImagesFileNames2[ni],cv::IMREAD_UNCHANGED);
           
           if(image.empty() or image2.empty())
           {

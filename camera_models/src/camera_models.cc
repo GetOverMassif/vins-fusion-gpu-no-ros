@@ -9,6 +9,8 @@
 #include <opencv2/core/eigen.hpp>
 #include <opencv2/imgproc/imgproc.hpp>
 #include <opencv2/calib3d/calib3d.hpp>
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/imgproc/types_c.h"
 
 #include "camodocal/camera_models.h"
 #include "ceres/ceres.h"
@@ -39,10 +41,10 @@ void
 Chessboard::findCorners(bool useOpenCV)
 {
     mCornersFound = findChessboardCorners(mImage, mBoardSize, mCorners,
-                                          CV_CALIB_CB_ADAPTIVE_THRESH +
-                                          CV_CALIB_CB_NORMALIZE_IMAGE +
-                                          CV_CALIB_CB_FILTER_QUADS +
-                                          CV_CALIB_CB_FAST_CHECK,
+                                          cv::CALIB_CB_ADAPTIVE_THRESH +
+                                          cv::CALIB_CB_NORMALIZE_IMAGE +
+                                          cv::CALIB_CB_FILTER_QUADS +
+                                          cv::CALIB_CB_FAST_CHECK,
                                           useOpenCV);
 
     if (mCornersFound)
@@ -149,7 +151,7 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
     // Image histogram normalization and
     // BGR to Grayscale image conversion (if applicable)
     // MARTIN: Set to "false"
-    if (image.channels() != 1 || (flags & CV_CALIB_CB_NORMALIZE_IMAGE))
+    if (image.channels() != 1 || (flags & cv::CALIB_CB_NORMALIZE_IMAGE))
     {
         cv::Mat norm_img(image.rows, image.cols, CV_8UC1);
 
@@ -159,14 +161,14 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             img = norm_img;
         }
 
-        if (flags & CV_CALIB_CB_NORMALIZE_IMAGE)
+        if (flags & cv::CALIB_CB_NORMALIZE_IMAGE)
         {
             cv::equalizeHist(image, norm_img);
             img = norm_img;
         }
     }
 
-    if (flags & CV_CALIB_CB_FAST_CHECK)
+    if (flags & cv::CALIB_CB_FAST_CHECK)
     {
         if (!checkChessboard(img, patternSize))
         {
@@ -197,7 +199,7 @@ Chessboard::findChessboardCornersImproved(const cv::Mat& image,
             cv::Mat thresh_img;
 
             // convert the input grayscale image to binary (black-n-white)
-            if (flags & CV_CALIB_CB_ADAPTIVE_THRESH)
+            if (flags & cv::CALIB_CB_ADAPTIVE_THRESH)
             {
                 int blockSize = lround(prevSqrSize == 0 ?
                     std::min(img.cols,img.rows)*(k%2 == 0 ? 0.2 : 0.1): prevSqrSize*2)|1;
@@ -1246,7 +1248,7 @@ Chessboard::generateQuads(std::vector<ChessboardQuadPtr>& quads,
             dp = pt[1] - pt[2];
             double d4 = sqrt(dp.dot(dp));
 
-            if (!(flags & CV_CALIB_CB_FILTER_QUADS) ||
+            if (!(flags & cv::CALIB_CB_FILTER_QUADS) ||
                 (d3*4 > d4 && d4*4 > d3 && d3*d4 < area*1.5 && area > minSize &&
                 d1 >= 0.15 * p && d2 >= 0.15 * p))
             {
@@ -2330,12 +2332,12 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
             cv::circle(image,
                        cv::Point(cvRound(pObs.x * drawMultiplier),
                                  cvRound(pObs.y * drawMultiplier)),
-                       5, green, 2, CV_AA, drawShiftBits);
+                       5, green, 2, cv::LINE_AA, drawShiftBits);
 
             cv::circle(image,
                        cv::Point(cvRound(pEst.x * drawMultiplier),
                                  cvRound(pEst.y * drawMultiplier)),
-                       5, red, 2, CV_AA, drawShiftBits);
+                       5, red, 2, cv::LINE_AA, drawShiftBits);
 
             float error = cv::norm(pObs - pEst);
 
@@ -2352,7 +2354,7 @@ CameraCalibration::drawResults(std::vector<cv::Mat>& images) const
 
         cv::putText(image, oss.str(), cv::Point(10, image.rows - 10),
                     cv::FONT_HERSHEY_COMPLEX, 0.5, cv::Scalar(255, 255, 255),
-                    1, CV_AA);
+                    1, cv::LINE_AA);
     }
 }
 

@@ -10,8 +10,9 @@ include_directories(${CMAKE_SOURCE_DIR}/../camera_models/include)
 add_library( camera_models SHARED IMPORTED )
 set_target_properties(camera_models PROPERTIES IMPORTED_LOCATION  ${CMAKE_SOURCE_DIR}/../camera_models/build/libcamera_models.so)
 
-#include(/usr/local/share/OpenCV/OpenCVConfig.cmake)
-find_package(OpenCV 3 REQUIRED PATHS /usr/local/share/OpenCV NO_DEFAULT_PATH) #when manual built
+find_package(OpenCV REQUIRED)
+# include(/usr/local/share/OpenCV/OpenCVConfig.cmake)
+# find_package(OpenCV 3 REQUIRED PATHS /usr/local/share/OpenCV NO_DEFAULT_PATH) #when manual built
 include_directories(${OPENCV_INCLUDE_DIRS})
 message(STATUS "    version: ${OpenCV_VERSION}") #check version
 
