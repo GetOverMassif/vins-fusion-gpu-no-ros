@@ -3,7 +3,7 @@
 imu: 1         
 num_of_cam: 2
 
-output_path: "/home/hcshim/config/output/"
+output_path: "/home/jiangtao.li/workplace/tmp/vio_output"
 
 cam0_calib: "cam0_mei.yaml"
 cam1_calib: "cam1_mei.yaml"
@@ -46,22 +46,22 @@ use_gpu: 0
 use_gpu_acc_flow: 0
 
 #feature traker paprameters
-max_cnt: 150            # max feature number in feature tracking
-min_dist: 30            # min distance between two features 
-freq: 0                # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
+max_cnt: 200            # 150, max feature number in feature tracking
+min_dist: 25            # 30, min distance between two features 
+freq: 0                 # frequence (Hz) of publish tracking result. At least 10Hz for good estimation. If set 0, the frequence will be same as raw image 
 F_threshold: 1.0        # ransac threshold (pixel)
 show_track: 1           # publish tracking image as topic
-show_TMI? : 0
+show_TMI? : 1           # 0
 fisheye : 0
 fisheye_mask_name : "test.png" # has to be in same folder with this file.
 thread_affine : 1
-flow_back: 1            # perform forward and backward optical flow to improve feature tracking accuracy
+flow_back: 1               # perform forward and backward optical flow to improve feature tracking accuracy
 
 
 #optimization parameters
-max_solver_time: 0.04  # max solver itration time (ms), to guarantee real time
-max_num_iterations: 8   # max solver itrations, to guarantee real time
-keyframe_parallax: 10.0 # keyframe selection threshold (pixel)
+max_solver_time: 0.04      # max solver itration time (ms), to guarantee real time
+max_num_iterations: 16     # 8, max solver itrations, to guarantee real time
+keyframe_parallax: 10.0    # keyframe selection threshold (pixel)
 
 #imu parameters       The more accurate parameters you provide, the better performance
 acc_n: 0.1          # accelerometer measurement noise standard deviation. 

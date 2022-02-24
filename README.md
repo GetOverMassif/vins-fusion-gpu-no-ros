@@ -51,3 +51,13 @@
 ### Update 19.09.18
   + DEBUG mode supports with **SHOW_TMI** parameter in config.yaml file. It prints out a lot more info.
   + FISHEYE mask reading method changed.
+
+### Update 22.02.18
+Usage:
+
+cd vins_estimator/build/
+
+#### run mono
+  ./vins_estimator ../../config/mono.yaml /home/jiangtao.li/workplace/data/V1_01_easy/mav0/cam0/data  ../../euroc_data_timestamp/V101.txt  /home/jiangtao.li/workplace/data/V1_01_easy/mav0/imu0/data.csv
+#### run stereo
+   ./vins_estimator ../../config/stereo.yaml /home/jiangtao.li/workplace/data/V1_01_easy/mav0/cam0/data /home/jiangtao.li/workplace/data/V1_01_easy/mav0/cam1/data  ../../euroc_data_timestamp/V101.txt ../../euroc_data_timestamp/V101.txt  /home/jiangtao.li/workplace/data/V1_01_easy/mav0/imu0/data.csv

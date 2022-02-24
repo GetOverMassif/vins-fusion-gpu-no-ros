@@ -3151,7 +3151,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
             vector<float> err;
             if(hasPrediction)
             {
-                cur_pts = predict_pts;
+                cur_pts = predict_pts;  // MARK_JT
                 cv::calcOpticalFlowPyrLK(prev_img, cur_img, prev_pts, cur_pts, status, err, cv::Size(21, 21), 1, 
                 cv::TermCriteria(cv::TermCriteria::COUNT+cv::TermCriteria::EPS, 30, 0.01), cv::OPTFLOW_USE_INITIAL_FLOW);
                 
@@ -3284,7 +3284,7 @@ map<int, vector<pair<int, Eigen::Matrix<double, 7, 1>>>> FeatureTracker::trackIm
         if(SHOW_TMI)
             printf("set mask begins");
         TicToc t_m;
-        setMask();
+        setMask();  // MARK
         if(SHOW_TMI){
             printf("set mask costs %fms", t_m.toc());
             printf("detect feature begins");}
@@ -3946,8 +3946,7 @@ void Estimator::inputIMU(double t, const Vector3d &linearAcceleration, const Vec
     mBuf.lock();
     accBuf.push(make_pair(t, linearAcceleration));
     gyrBuf.push(make_pair(t, angularVelocity));
-    if(SHOW_TMI)
-        printf("input imu with time %f \n", t);
+    // if(SHOW_TMI) printf("input imu with time %f \n", t);
     mBuf.unlock();
 
     fastPredictIMU(t, linearAcceleration, angularVelocity);
@@ -4887,7 +4886,7 @@ void Estimator::optimization()
         options.max_solver_time_in_seconds = SOLVER_TIME;
     TicToc t_solver;
     ceres::Solver::Summary summary;
-    ceres::Solve(options, &problem, &summary);
+    ceres::Solve(options, &problem, &summary);  // MARK_JT
 
     if(SHOW_TMI){
         cout << summary.BriefReport() << endl;
@@ -5308,8 +5307,7 @@ void Estimator::outliersRejection(set<int> &removeIndex)
                                                     depth, pts_i, pts_j);
                 err += tmp_error;
                 errCnt++;
-                if(SHOW_TMI)
-                    printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
+                // if(SHOW_TMI) printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
             }
             // need to rewrite projecton factor.........
             if(STEREO && it_per_frame.is_stereo)
@@ -5323,8 +5321,7 @@ void Estimator::outliersRejection(set<int> &removeIndex)
                                                         depth, pts_i, pts_j_right);
                     err += tmp_error;
                     errCnt++;
-                    if(SHOW_TMI)
-                        printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
+                    // if(SHOW_TMI) printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
                 }
                 else
                 {
@@ -5333,8 +5330,7 @@ void Estimator::outliersRejection(set<int> &removeIndex)
                                                         depth, pts_i, pts_j_right);
                     err += tmp_error;
                     errCnt++;
-                    if(SHOW_TMI)
-                        printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
+                    // if(SHOW_TMI) printf("tmp_error %f\n", FOCAL_LENGTH / 1.5 * tmp_error);
                 }       
             }
         }

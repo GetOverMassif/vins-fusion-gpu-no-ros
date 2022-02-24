@@ -8,7 +8,7 @@ num_of_cam: 1
 imu_topic: "/imu0"
 image0_topic: "/cam0/image_raw"
 image1_topic: "/cam1/image_raw"
-output_path: "/home/hcshim/config/output/"
+output_path: "/home/jiangtao.li/workplace/tmp/vio_output"
 
 cam0_calib: "cam0_mei.yaml"
 cam1_calib: "cam1_mei.yaml"
