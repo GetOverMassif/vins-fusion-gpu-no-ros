@@ -18,3 +18,9 @@
   + some Publishing functions got removed
   + using **ros_things.h**
   + need data set from EuRoc [here](https://projects.asl.ethz.ch/datasets/doku.php?id=kmavvisualinertialdatasets) as ASL data format
+
+
+sudo apt-get install -y build-essential
+sudo apt-get install libboost-all-dev
+sudo apt-get install libopencv-dev=4.2.0+dfsg-5
+sudo apt-get install libceres-dev
