@@ -121,17 +121,17 @@ void LoadImages(const string &strImagePath, const string &strTimesStampsPath,
     strImagesFileNames.reserve(5000); 
     while(!fTimes.eof())
     {
-    string s;
-    getline(fTimes,s);
-    if(!s.empty())
-    {
-        stringstream ss;
-        ss << s;
-        strImagesFileNames.push_back(strImagePath + "/" + ss.str() + ".png");
-        double t;
-        ss >> t;
-        timeStamps.push_back(t/1e9);
-    }
+        string s;
+        getline(fTimes,s);
+        if(!s.empty())
+        {
+            stringstream ss;
+            ss << s;
+            strImagesFileNames.push_back(strImagePath + "/" + ss.str() + ".png");
+            double t;
+            ss >> t;
+            timeStamps.push_back(t/1e9);
+        }
     }
 }
 /******************* load image end ***********************/
@@ -143,43 +143,43 @@ void LoadImus(ifstream & fImus, const ros::Time &imageTimestamp)
 
     while(!fImus.eof())
     {
-    string s;
-    getline(fImus,s);
-    if(!s.empty())
-    {
-       char c = s.at(0);
-       if(c<'0' || c>'9')      //remove first line in data.csv
-               continue;       
-        stringstream ss;
-        ss << s;
-        double tmpd;
-        int cnt=0;
-        double data[7];
-        while(ss >> tmpd)
+        string s;
+        getline(fImus,s);
+        if(!s.empty())
         {
-        data[cnt] = tmpd;
-        cnt++;
-        if(cnt ==7)
-          break;
-        if(ss.peek() == ',' || ss.peek() == ' ')
-          ss.ignore();
+            char c = s.at(0);
+            if(c<'0' || c>'9')      //remove first line in data.csv
+                continue;
+            stringstream ss;
+            ss << s;
+            double tmpd;
+            int cnt=0;
+            double data[7];
+            while(ss >> tmpd)
+            {
+            data[cnt] = tmpd;
+            cnt++;
+            if(cnt ==7)
+              break;
+            if(ss.peek() == ',' || ss.peek() == ' ')
+              ss.ignore();
+            }
+            data[0] *=1e-9; //convert to second unit
+            sensor_msgs::ImuPtr imudata(new sensor_msgs::Imu);
+            imudata->angular_velocity.x = data[1];
+            imudata->angular_velocity.y = data[2];
+            imudata->angular_velocity.z = data[3];
+            imudata->linear_acceleration.x = data[4];
+            imudata->linear_acceleration.y = data[5];
+            imudata->linear_acceleration.z = data[6];
+            uint32_t  sec = data[0];
+            uint32_t nsec = (data[0]-sec)*1e9;
+            nsec = (nsec/1000)*1000+500;
+            imudata->header.stamp = ros::Time(sec,nsec);
+            imu_callback(imudata);
+            if (imudata->header.stamp > imageTimestamp)       //load all imu data produced in interval time between two consecutive frams
+                break;
         }
-        data[0] *=1e-9; //convert to second unit
-        sensor_msgs::ImuPtr imudata(new sensor_msgs::Imu);
-        imudata->angular_velocity.x = data[1];
-        imudata->angular_velocity.y = data[2];
-        imudata->angular_velocity.z = data[3];
-        imudata->linear_acceleration.x = data[4];
-        imudata->linear_acceleration.y = data[5];
-        imudata->linear_acceleration.z = data[6];
-        uint32_t  sec = data[0];
-        uint32_t nsec = (data[0]-sec)*1e9;
-        nsec = (nsec/1000)*1000+500;
-        imudata->header.stamp = ros::Time(sec,nsec);
-        imu_callback(imudata);
-        if (imudata->header.stamp > imageTimestamp)       //load all imu data produced in interval time between two consecutive frams 
-          break;
-    }
     }
 }
 
@@ -293,48 +293,47 @@ int main(int argc, char **argv)
        
         for(ni=0; ni<imageNum; ni++)
         {
+            double  tframe = vTimeStamps[ni];   //timestamp
+            uint32_t  sec = tframe;
+            uint32_t nsec = (tframe-sec)*1e9;
+            nsec = (nsec/1000)*1000+500;
+            ros::Time image_timestamp = ros::Time(sec, nsec);
+            double  tframe2 = vTimeStamps2[ni];   //timestamp
+            uint32_t  sec2 = tframe2;
+            uint32_t nsec2 = (tframe2-sec2)*1e9;
+            nsec2 = (nsec2/1000)*1000+500;
+            ros::Time image_timestamp2 = ros::Time(sec2, nsec2);
+            // read imu data
+            LoadImus(fImus,image_timestamp); //TODO
 
-          double  tframe = vTimeStamps[ni];   //timestamp
-          uint32_t  sec = tframe;
-          uint32_t nsec = (tframe-sec)*1e9;
-          nsec = (nsec/1000)*1000+500;
-          ros::Time image_timestamp = ros::Time(sec, nsec);
-          double  tframe2 = vTimeStamps2[ni];   //timestamp
-          uint32_t  sec2 = tframe2;
-          uint32_t nsec2 = (tframe2-sec2)*1e9;
-          nsec2 = (nsec2/1000)*1000+500;
-          ros::Time image_timestamp2 = ros::Time(sec2, nsec2);
-          // read imu data
-          LoadImus(fImus,image_timestamp); //TODO
-           
-          //read image from file
-          image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
-          image2 = cv::imread(vStrImagesFileNames2[ni],cv::IMREAD_UNCHANGED);
-          
-          if(image.empty() or image2.empty())
-          {
+            //read image from file
+            image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
+            image2 = cv::imread(vStrImagesFileNames2[ni],cv::IMREAD_UNCHANGED);
+
+            if(image.empty() or image2.empty())
+            {
               cerr << endl << "Failed to load image: " << vStrImagesFileNames[ni] <<endl;
               return 1;
-          }
-          std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
-          img0_callback(image, image_timestamp.toSec());
-          img1_callback(image2, image_timestamp2.toSec());
-          std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
-          double timeSpent =std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
-          
-          //wait to load the next frame image
-          double T=0;
-          if(ni < imageNum-1)
-            T = vTimeStamps[ni+1]-tframe; //interval time between two consecutive frames,unit:second
-          else if(ni>0)    //lastest frame
-            T = tframe-vTimeStamps[ni-1];
-          
-          if(timeSpent < T)
-            usleep((T-timeSpent)*1e6); //sec->us:1e6
-          else
-        cerr << endl << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
-    }
+            }
+            std::chrono::steady_clock::time_point t1 = std::chrono::steady_clock::now();
+            img0_callback(image, image_timestamp.toSec());
+            img1_callback(image2, image_timestamp2.toSec());
+            std::chrono::steady_clock::time_point t2 = std::chrono::steady_clock::now();
+            double timeSpent =std::chrono::duration_cast<std::chrono::duration<double>>(t2-t1).count();
 
-    return 0;
-}
+            //wait to load the next frame image
+            double T=0;
+            if(ni < imageNum-1)
+            T = vTimeStamps[ni+1]-tframe; //interval time between two consecutive frames,unit:second
+            else if(ni>0)    //lastest frame
+            T = tframe-vTimeStamps[ni-1];
+
+            if(timeSpent < T)
+            usleep((T-timeSpent)*1e6); //sec->us:1e6
+            else
+            cerr << endl << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
+        }
+
+        return 0;
+    }
 }
