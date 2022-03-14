@@ -186,6 +186,7 @@ void LoadImus(ifstream & fImus, const ros::Time &imageTimestamp)
 int main(int argc, char **argv)
 {
   /******************* load image begin ***********************/
+//  TicToc t_main;
     if(argc != 5 && argc!=7)
     {
         cout << argc << endl;
@@ -261,7 +262,8 @@ int main(int argc, char **argv)
     }
     else if(STEREO)
     {
-                //imu data file 
+        //imu data file
+        std::cout << "STEREO start." << std::endl;
         ifstream fImus;
         fImus.open(argv[6]); // check
 
@@ -324,16 +326,17 @@ int main(int argc, char **argv)
             //wait to load the next frame image
             double T=0;
             if(ni < imageNum-1)
-            T = vTimeStamps[ni+1]-tframe; //interval time between two consecutive frames,unit:second
+                T = vTimeStamps[ni+1]-tframe; //interval time between two consecutive frames,unit:second
             else if(ni>0)    //lastest frame
-            T = tframe-vTimeStamps[ni-1];
+                T = tframe-vTimeStamps[ni-1];
 
             if(timeSpent < T)
-            usleep((T-timeSpent)*1e6); //sec->us:1e6
+                usleep((T-timeSpent)*1e6); //sec->us:1e6
             else
-            cerr << endl << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
+                cerr << endl << "process image speed too slow, larger than interval time between two consecutive frames" << endl;
         }
 
         return 0;
     }
+//    std::cout << "main.cpp costs " << t_main.toc()/100 << "s" << endl;
 }

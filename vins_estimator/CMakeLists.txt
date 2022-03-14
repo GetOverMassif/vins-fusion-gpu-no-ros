@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
+#cmake_minimum_required(VERSION 3.16.3)
 project(vins)
 
 set(CMAKE_BUILD_TYPE "Release")
@@ -9,6 +10,10 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -fPIC -Wall")
 include_directories(${CMAKE_SOURCE_DIR}/../camera_models/include)
 add_library( camera_models SHARED IMPORTED )
 set_target_properties(camera_models PROPERTIES IMPORTED_LOCATION  ${CMAKE_SOURCE_DIR}/../camera_models/build/libcamera_models.so)
+
+#if (POLICY CMP0057)
+#    cmake_policy(SET CMP0057 NEW)
+#endif ()
 
 find_package(OpenCV REQUIRED)
 # include(/usr/local/share/OpenCV/OpenCVConfig.cmake)

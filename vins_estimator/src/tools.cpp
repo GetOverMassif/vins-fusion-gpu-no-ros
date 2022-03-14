@@ -913,6 +913,8 @@ void* ThreadsConstructA(void* threadsstruct)
 
 void MarginalizationInfo::marginalize()
 {
+    TicToc t_marg;
+    TicToc t_init;
     int pos = 0;
     for (auto &it : parameter_block_idx)
     {
@@ -940,11 +942,13 @@ void MarginalizationInfo::marginalize()
         return;
     }
 
+    std::cout << "[m,n] = [" << m << "," << n << "];" << std::endl;
     TicToc t_summing;
     Eigen::MatrixXd A(pos, pos);
     Eigen::VectorXd b(pos);
     A.setZero();
     b.setZero();
+    std::cout << "marginalize part1 costs " << t_init.toc() << "ms" << endl;
     //multi thread
 
     TicToc t_thread_summing;
@@ -982,9 +986,10 @@ void MarginalizationInfo::marginalize()
         // if(SHOW_TMI){
         //     printf("thread summing up costs %f ms", t_thread_summing.toc());
         //     printf("A diff %f , b diff %f ", (A - tmp_A).sum(), (b - tmp_b).sum());}
-
+    std::cout << "marginalize part2 costs " << t_thread_summing.toc() << "ms" << endl;
 
     //TODO
+    TicToc t_compute;
     Eigen::MatrixXd Amm = 0.5 * (A.block(0, 0, m, m) + A.block(0, 0, m, m).transpose());
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes(Amm);
 
@@ -1011,6 +1016,9 @@ void MarginalizationInfo::marginalize()
     linearized_jacobians = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
     linearized_residuals = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * b;
 
+    std::cout << "marginalize part3 costs " << t_compute.toc() << "ms" << endl;
+
+    std::cout << "MarginalizationInfo::marginalize costs " << t_marg.toc() << "ms" << endl;
 }
 
 std::vector<double *> MarginalizationInfo::getParameterBlocks(std::unordered_map<long, double *> &addr_shift)
@@ -4763,6 +4771,7 @@ bool Estimator::failureDetection()
 
 void Estimator::optimization()
 {
+    std::cout << "Estimator::optimization start." << std::endl;
     TicToc t_whole, t_prepare;
     vector2double();
 
@@ -5094,6 +5103,7 @@ void Estimator::optimization()
             
         }
     }
+    std::cout << "Estimator::optimization costs " << t_whole.toc() << "ms" << std::endl;
 }
 
 void Estimator::slideWindow()
