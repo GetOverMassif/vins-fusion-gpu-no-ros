@@ -196,6 +196,12 @@ int main(int argc, char **argv)
     readParameters(argv[1]);
     estimator.setParameter();
 
+    ofstream myfile;
+    // create log file
+    myfile.open (LOG_FILE_NAME, ios::trunc);\
+    myfile << "\n";
+    myfile.close();
+
     if (!STEREO)
     {
         //imu data file 

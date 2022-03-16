@@ -49,6 +49,7 @@ using namespace std;
 using namespace camodocal;
 using namespace Eigen;
 
+#define LOG_FILE_NAME "VIO.txt"
 
 //parameters //TODO
 const double FOCAL_LENGTH = 460.0;
