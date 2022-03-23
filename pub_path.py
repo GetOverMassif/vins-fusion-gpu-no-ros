@@ -86,14 +86,14 @@ class MinimalPublisherSync(Node):
         self._last_pos_ = [0, 0, 0]
         self.ct = 0
         self.tf_broadcaster = tf2_ros.TransformBroadcaster(self)
-
+    
     def timer_callback(self):
         
         pose = PoseStamped()
         pose.header.frame_id = "map"
         pose.header.stamp = self.get_clock().now().to_msg()
 
-        with open('/home/jiangtao.li/workplace/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt') as f:
+        with open('/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt') as f:
             contents = f.readlines()
             if len(contents) < 3: 
                 self.path_msg.poses.clear()
@@ -192,14 +192,14 @@ def main(args=None):
     rclpy.init(args=args)
 
     minimal_publisher = MinimalPublisherSync()
-    gt_publisher = GTPublisher()
+    # gt_publisher = GTPublisher()
     rclpy.spin(minimal_publisher)
     # rclpy.spin(gt_publisher)
     # Destroy the node explicitly
     # (optional - otherwise it will be done automatically
     # when the garbage collector destroys the node object)
     minimal_publisher.destroy_node()
-    gt_publisher.destroy_node()
+    # gt_publisher.destroy_node()
     rclpy.shutdown()
 
 
