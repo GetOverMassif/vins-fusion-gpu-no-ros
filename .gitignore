@@ -3,3 +3,6 @@ vins_estimator/build
 camera_models/build
 noros/*
 .vscode/*
+.idea
+vins_estimator/cmake-build-debug/*
+vins_estimator/cmake-build-debug/CMakeFiles/clion-log.txt
