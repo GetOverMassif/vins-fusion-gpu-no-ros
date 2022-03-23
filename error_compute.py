@@ -3,7 +3,6 @@
 """Compute the error between the estimated poses and the ground true"""
 
 from os import path
-# from geometry_msgs.msg import PoseStamped, TransformStamped
 import csv
 from turtle import pos
 
