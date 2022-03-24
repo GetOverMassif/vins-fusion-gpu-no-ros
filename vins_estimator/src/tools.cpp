@@ -989,6 +989,7 @@ void MarginalizationInfo::marginalize()
     std::cout << "marginalize part2 costs " << t_thread_summing.toc() << "ms" << endl;
 
     //TODO
+
     TicToc t_compute;
     Eigen::MatrixXd Amm = 0.5 * (A.block(0, 0, m, m) + A.block(0, 0, m, m).transpose());
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes(Amm);
@@ -996,7 +997,10 @@ void MarginalizationInfo::marginalize()
     //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
 
     Eigen::MatrixXd Amm_inv = saes.eigenvectors() * Eigen::VectorXd((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
+
     //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
+
+    // Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
 
     Eigen::VectorXd bmm = b.segment(0, m);
     Eigen::MatrixXd Amr = A.block(0, m, m, n);
@@ -5463,6 +5467,17 @@ void pubOdometry(const Estimator &estimator, const std_msgs::Header &header)
         foutC.close();
         Eigen::Vector3d tmp_T = estimator.Ps[WINDOW_SIZE];
         Eigen::Vector3d tmp_V = estimator.Vs[WINDOW_SIZE];
+        ofstream myfile;
+        if(SHOW_TMI){
+            // add res to log file
+            myfile.open (LOG_FILE_NAME, ios::app);
+            myfile << std::fixed << std::setprecision(6) << header.stamp.toSec() << " ";
+            myfile << tmp_T.x() << " " << tmp_T.y() << " " << tmp_T.z() << " ";
+            myfile << tmp_Q.w() << " " << tmp_Q.x() << " " << tmp_Q.y() << " " << tmp_Q.z() << " ";
+            myfile << tmp_V.x() << " " << tmp_V.y() << " " << tmp_V.z() << " ";
+            myfile << "\n";
+            myfile.close();
+        }
         if(!SHOW_TMI)
             printf("time: %f, td(offset): %f \n Pos: %f %f %f quat: %f %f %f %f vel: %f %f %f \n", header.stamp.toSec(), estimator.td, tmp_T.x(), tmp_T.y(), tmp_T.z(),
                                                           tmp_Q.w(), tmp_Q.x(), tmp_Q.y(), tmp_Q.z(), tmp_V.x(), tmp_V.y(), tmp_V.z());
