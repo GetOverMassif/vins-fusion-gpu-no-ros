@@ -2,10 +2,8 @@
 # -*- coding: utf-8 -*-
 """Compute the error between the estimated poses and the ground true"""
 
-# from distutils.command.build_scripts import first_line_re
 from os import path
 import csv
-# from turtle import pos
 import numpy as np
 import math
 
