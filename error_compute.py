@@ -10,7 +10,7 @@ import math
 es_poses_path = "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt"
 gt_poses_path = "/home/lj/data/V1_01_easy/mav0/state_groundtruth_estimate0/data.csv"
 
-interpolation_flag = 0
+interpolation_flag = 1
 TimeStampEstimated = 0
 TimeStampGroundTruth = 1
 es_dt = 0.05
@@ -43,16 +43,29 @@ def tr2Transform(translation,rotation):
     transformation = np.zeros([4,4],float)
     transformation[0:3,0:3] = rotation;
     transformation[0:3,3] = translation.transpose();
-    transformation[3,3] = 1
+    transformation[3,3] = 1.0
     return transformation
 
 # computer square sum of the translation from a transformation matrix
 def transSquare(M):
-    x = M[0,0]
-    y = M[1,0]
-    z = M[2,0]
+    x = M[0,3]
+    y = M[1,3]
+    z = M[2,3]
     # print("x,y,z = ",x,y,z)
-    return x**2+y**2+z**2
+    return math.sqrt(x**2+y**2+z**2)
+
+
+def distance(M1,M2):
+    x1 = M1[0,3]
+    y1 = M1[1,3]
+    z1 = M1[2,3]
+
+    x2 = M2[0,3]
+    y2 = M2[1,3]
+    z2 = M2[2,3]
+
+    return math.sqrt((x2-x1)**2+(y2-y1)**2+(z2-z1)**2)
+
 
 # save pose information
 class Pose():
@@ -179,8 +192,8 @@ class TimeRegistration():
             contents = contents[count:]
             for line in contents:
                 self.es_poses.append(Pose.init1(line,TimeStampEstimated))
-            print("Num of es_poses:",len(self.es_poses))
-            print(self.es_poses[0].timestamp)
+            # print("Num of es_poses:",len(self.es_poses))
+            # print(self.es_poses[0].timestamp)
 
         # 读取ground truth
         with open(gt_poses_path) as csv_file:
@@ -191,8 +204,8 @@ class TimeRegistration():
                     count2 = count2+1
                     continue
                 self.gt_poses.append(Pose.init1((" ".join(row)).replace(","," "),TimeStampGroundTruth))
-            print("Num of gt_poses:",len(self.gt_poses))
-            print(self.gt_poses[0].timestamp)
+            # print("Num of gt_poses:",len(self.gt_poses))
+            # print(self.gt_poses[0].timestamp)
     
     def register(self):
         es_first_flag = 0
@@ -211,6 +224,8 @@ class TimeRegistration():
             while es_timestamp < self.gt_poses[gt_flag].timestamp or es_timestamp > self.gt_poses[gt_flag+1].timestamp:
                 gt_flag = gt_flag + 1
             self.gt_poses_selected.append(Pose.merge(es_timestamp,self.gt_poses[gt_flag],self.gt_poses[gt_flag+1],interpolation_flag))
+            # if len(self.gt_poses_selected)==368:
+                
     
     def computeError(self):
         if(len(self.es_poses_selected)!=len(self.gt_poses_selected)):
@@ -218,28 +233,85 @@ class TimeRegistration():
             return
         
         RMSE = 0.0
+        translationScale = 0.0
+
         num_pose = len(self.es_poses_selected)
         print("Num of poses computed:",num_pose)
+        es_move = []
+        gt_move = []
+        record_size = []
+        move_compute_without_inverse1 = []
+        move_compute_without_inverse2 = []
+        RMSE_single = []
+
         for i in range(num_pose-1):
             # Ei = (Q1^-1 · Q2)^-1 · (P1^-1 · P2)
+            
             P1 = self.es_poses_selected[i].transformation()
             P2 = self.es_poses_selected[i+1].transformation()
             Q1 = self.gt_poses_selected[i].transformation()
             Q2 = self.gt_poses_selected[i+1].transformation()
 
-            Ei = np.linalg.inv(np.linalg.inv(Q1) * Q2) * (np.linalg.inv(P1) * P2)
+            # Ei = P2.dot((np.linalg.inv(P1)).dot(Q1.dot(np.linalg.inv(Q2))));
+
+            T1 = (np.linalg.inv(P1)).dot(P2)
+            T2 = (np.linalg.inv(Q1)).dot(Q2)
+            Ei = (np.linalg.inv(T1)).dot(T2)
+
+            # print("*******************************************************************************")
+            # print("\nP1\n",P1)
+            # print("\nP2\n",P2)
+            
+            # print("\nT1\n",T2)
+            # print("minus dx,dy,dz",P2[0,3]-P1[0,3],P2[1,3]-P1[1,3],P2[2,3]-P1[2,3])
+            # print("T1     x, y, z",T1[0,3],T1[1,3],T1[2,3])
+            # print("num:  ",i)
+            # if i in [180,367,589,927]: 
+            #     print("here")
+            
+            # print(Ei,"\nsize",transSquare(Ei),"\n\n")
+            # es_move.append(transSquare(P2 * np.linalg.inv(P1)))
+            # gt_move.append(transSquare(Q2 * np.linalg.inv(Q1)))
+            # record_size.append(float(format(transSquare(Ei),'.6f')))
+
+            # move_compute_without_inverse1.append(float(format(distance(P1,P2),'.6f')))
+            # move_compute_without_inverse.append(float(format(distance(Q1,Q2),'.6f')))
+            # move_compute_without_inverse1.append(float(format(transSquare((np.linalg.inv(P1)).dot(P2)),'.6f')))
+            # move_compute_without_inverse2.append(float(format(transSquare(Q2.dot(np.linalg.inv(Q1))),'.6f')))
+
+            # translationScale = transSquare(np.linalg.inv(Q1) * Q2) / transSquare(np.linalg.inv(P1) * P2)
+            # print(transSquare(np.linalg.inv(Q1) * Q2),transSquare(np.linalg.inv(P1) * P2))
+
+            # print(Ei,"\n")
+            # RMSE_single.append(float(format(distance(T1,T2),'.6f')))
+
             RMSE += transSquare(Ei)
-        RMSE = math.sqrt(RMSE/float(num_pose))
-        print("RMSE = ",RMSE)
+            # RMSE += distance(T1,T2)
+
+        RMSE = RMSE/float(num_pose)
+        # print(RMSE_single)
+        print("\nRMSE = ",RMSE)
+
+        # print(record_size)
+        print(move_compute_without_inverse1)
+        # print("num",len(move_compute_without_inverse1))
+        # print(move_compute_without_inverse2)
+        # print("num",len(move_compute_without_inverse2))
 
         
         # RMSE = sqrt{ SUM[ (trans(Ei))^2 ] / m }
-    
+
 
 def main(args=None):
     time_registration = TimeRegistration()
     time_registration.register()
     time_registration.computeError()
+    # print("Estimated poses")
+    # time_registration.es_poses_selected[367].printValue()
+    # time_registration.es_poses_selected[368].printValue()
+    # print("Processed ground truth")
+    # time_registration.gt_poses_selected[367].printValue()
+    # time_registration.gt_poses_selected[368].printValue()
 
     # print(Pose.init1("1403715323.012144 -0.829233 -3.422542 0.505557 0.549673 0.131937 -0.821679 0.072769 -0.468353 0.379462 0.040375 ",TimeStampEstimated).transformation())
 
