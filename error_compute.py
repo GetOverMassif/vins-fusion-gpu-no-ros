@@ -6,6 +6,7 @@ from os import path
 import csv
 import numpy as np
 import math
+from matplotlib import pyplot as plt
 
 es_poses_path = "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt"
 gt_poses_path = "/home/lj/data/V1_01_easy/mav0/state_groundtruth_estimate0/data.csv"
@@ -232,74 +233,55 @@ class TimeRegistration():
             print("【Error】The number of selected estimated and ground truth poses is not equal.")
             return
         
-        RMSE = 0.0
-        translationScale = 0.0
+        # RPE: relative pose error
+        # ATE: absolute trajectory error
+        RPE = 0.0
+        ATE = 0.0
 
         num_pose = len(self.es_poses_selected)
         print("Num of poses computed:",num_pose)
-        es_move = []
-        gt_move = []
-        record_size = []
-        move_compute_without_inverse1 = []
-        move_compute_without_inverse2 = []
-        RMSE_single = []
+        RPE_list = []
+        ATE_list = []
+        translation_list = []
+        P0 = self.es_poses_selected[0].transformation()
+        Q0 = self.gt_poses_selected[0].transformation()
 
-        for i in range(num_pose-1):
-            # Ei = (Q1^-1 · Q2)^-1 · (P1^-1 · P2)
-            
+        for i in range(num_pose-1):     
             P1 = self.es_poses_selected[i].transformation()
             P2 = self.es_poses_selected[i+1].transformation()
             Q1 = self.gt_poses_selected[i].transformation()
             Q2 = self.gt_poses_selected[i+1].transformation()
 
-            # Ei = P2.dot((np.linalg.inv(P1)).dot(Q1.dot(np.linalg.inv(Q2))));
-
             T1 = (np.linalg.inv(P1)).dot(P2)
             T2 = (np.linalg.inv(Q1)).dot(Q2)
+
+            ATE_T1 = (np.linalg.inv(P0)).dot(P2)
+            ATE_T2 = (np.linalg.inv(Q0)).dot(Q2)
+
             Ei = (np.linalg.inv(T1)).dot(T2)
 
-            # print("*******************************************************************************")
-            # print("\nP1\n",P1)
-            # print("\nP2\n",P2)
-            
-            # print("\nT1\n",T2)
-            # print("minus dx,dy,dz",P2[0,3]-P1[0,3],P2[1,3]-P1[1,3],P2[2,3]-P1[2,3])
-            # print("T1     x, y, z",T1[0,3],T1[1,3],T1[2,3])
-            # print("num:  ",i)
-            # if i in [180,367,589,927]: 
-            #     print("here")
-            
-            # print(Ei,"\nsize",transSquare(Ei),"\n\n")
-            # es_move.append(transSquare(P2 * np.linalg.inv(P1)))
-            # gt_move.append(transSquare(Q2 * np.linalg.inv(Q1)))
-            # record_size.append(float(format(transSquare(Ei),'.6f')))
+            ATE_Ei = (np.linalg.inv(ATE_T1)).dot(ATE_T2)
 
-            # move_compute_without_inverse1.append(float(format(distance(P1,P2),'.6f')))
-            # move_compute_without_inverse.append(float(format(distance(Q1,Q2),'.6f')))
-            # move_compute_without_inverse1.append(float(format(transSquare((np.linalg.inv(P1)).dot(P2)),'.6f')))
-            # move_compute_without_inverse2.append(float(format(transSquare(Q2.dot(np.linalg.inv(Q1))),'.6f')))
+            translation_list.append(float(format(transSquare(T1),'.6f')))
+            RPE_list.append(float(format(transSquare(Ei),'.6f')))
+            ATE_list.append(float(format(transSquare(ATE_Ei),'.6f')))
+            RPE += transSquare(Ei)
 
-            # translationScale = transSquare(np.linalg.inv(Q1) * Q2) / transSquare(np.linalg.inv(P1) * P2)
-            # print(transSquare(np.linalg.inv(Q1) * Q2),transSquare(np.linalg.inv(P1) * P2))
 
-            # print(Ei,"\n")
-            # RMSE_single.append(float(format(distance(T1,T2),'.6f')))
+        # compute and print RPE
+        RPE = RPE/float(num_pose)
+        print("\nRPE = ",RPE)
 
-            RMSE += transSquare(Ei)
-            # RMSE += distance(T1,T2)
+        fig = plt.figure()
+        ax = fig.add_axes([0.1,0.1,0.8,0.8])
+        l1 = ax.plot(range(len(translation_list)),translation_list)
+        l2 = ax.plot(range(len(RPE_list)),RPE_list)
+        l2 = ax.plot(range(len(ATE_list)),ATE_list)
+        ax.legend(labels = ('relative movement','relative pose error','absolute trajectory error'), loc = 'higher left')
+        ax.set_title("trajectory error")
+        ax.set_xlabel("frame id")
+        ax.set_ylabel("distance /m")
 
-        RMSE = RMSE/float(num_pose)
-        # print(RMSE_single)
-        print("\nRMSE = ",RMSE)
-
-        # print(record_size)
-        print(move_compute_without_inverse1)
-        # print("num",len(move_compute_without_inverse1))
-        # print(move_compute_without_inverse2)
-        # print("num",len(move_compute_without_inverse2))
-
-        
-        # RMSE = sqrt{ SUM[ (trans(Ei))^2 ] / m }
 
 
 def main(args=None):
@@ -321,3 +303,5 @@ def main(args=None):
 
 if __name__ == '__main__':
     main()
+    #使用show展示图像
+    plt.show()
