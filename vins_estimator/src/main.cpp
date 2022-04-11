@@ -3,6 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #define SHOW_UNDISTORTION 0
+#define ADJUST_RESOLUTION 1
 
 // static FeatureTracker trackerData[NUM_OF_CAM];
 static Estimator estimator;
@@ -242,6 +243,11 @@ int main(int argc, char **argv)
         //read image from file
           image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
           
+#if ADJUST_RESOLUTION
+          double resolution_scale = 1080.0/480.0;
+          cv::Mat image_clone = image.clone();
+          cv::resize(image_clone, image, cv::Size(0,0), resolution_scale, resolution_scale, cv::INTER_LINEAR);
+#endif
           if(image.empty())
           {
           cerr << endl << "Failed to load image: " << vStrImagesFileNames[ni] <<endl;
@@ -317,6 +323,16 @@ int main(int argc, char **argv)
             //read image from file
             image = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
             image2 = cv::imread(vStrImagesFileNames2[ni],cv::IMREAD_UNCHANGED);
+
+#if ADJUST_RESOLUTION
+            double resolution_scale = 1080.0/480.0;
+            // cv::Mat image_clone = image.clone();
+            cv::Mat image_clone = cv::imread(vStrImagesFileNames[ni],cv::IMREAD_UNCHANGED);
+            // cv::Mat image2_clone = image2.clone();
+            cv::Mat image2_clone = cv::imread(vStrImagesFileNames2[ni],cv::IMREAD_UNCHANGED);
+            cv::resize(image_clone, image, cv::Size(0,0), resolution_scale, resolution_scale, cv::INTER_LINEAR);
+            cv::resize(image2_clone, image2, cv::Size(0,0), resolution_scale, resolution_scale, cv::INTER_LINEAR);
+#endif
 
             if(image.empty() or image2.empty())
             {

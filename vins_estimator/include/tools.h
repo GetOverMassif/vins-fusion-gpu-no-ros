@@ -44,6 +44,8 @@
 
 #include <iostream> // error
 #include <fstream>
+#include <fpm/fixed.hpp>
+#include <iomanip>
 
 using namespace std;
 using namespace camodocal;
@@ -99,6 +101,80 @@ extern int SHOW_TMI; //added
 extern int FISHEYE; //added
 
 void readParameters(const string &config_file);
+
+double double_fixed_16_16_double(float raw_double)
+{
+    fpm::fixed_16_16 x { raw_double };
+    return static_cast<double>(x);
+}
+
+Eigen::MatrixXd double_fixed_16_16_double(Eigen::MatrixXd raw_M)
+{
+    // auto M = raw_M.copy();
+    static double max_num = 0.0;
+    static double min_num = 0.0;
+    static double min_abs_upper0 = 400000000000.0;
+    static double min_abs_lower0 = -400000000000.0;
+
+    auto M = raw_M;
+    int row = M.rows();
+    int col = M.cols();
+
+    for(int i=row-1;i>=0;i--)
+    {
+        for(int j=col-1;j>=0;j--)
+        {
+            // M(i,j) = double_fixed_16_16_double(M(i,j));
+            max_num = max(max_num,M(i,j));
+            min_num = min(min_num,M(i,j));
+            if (abs(M(i,j)) >= 0.0 && abs(M(i,j)) < min_abs_upper0){
+                min_abs_upper0 = M(i,j);
+            }
+            if (abs(M(i,j)) <= 0.0 && abs(M(i,j)) < abs(min_abs_lower0)){
+                min_abs_lower0 = M(i,j);
+            }
+        }
+    }
+    std::cout << "Max_num in matrix = " << fixed << setprecision(16) << max_num <<std::endl;
+    std::cout << "Min_num in matrix = " << fixed << setprecision(16) << min_num <<std::endl;
+    std::cout << "Min_abs_upper0 in matrix = " << fixed << setprecision(16) << min_abs_upper0 <<std::endl;
+    std::cout << "Min_abs_lower0 in matrix = " << fixed << setprecision(16) << min_abs_lower0 <<std::endl;
+    return M;
+}
+
+Eigen::VectorXd double_fixed_16_16_double(Eigen::VectorXd raw_V)
+{
+    // auto V = raw_V.copy();
+    static double max_num = 0.0;
+    static double min_num = 0.0;
+    static double min_abs_upper0 = 156910000.0;
+    static double min_abs_lower0 = -156910000.0;
+
+    auto V = raw_V;
+    int row = V.rows();
+    int col = V.cols();
+
+    for(int i=row-1;i>=0;i--)
+    {
+        for(int j=col-1;j>=0;j--)
+        {
+            // V(i,j) = double_fixed_16_16_double(V(i,j));
+            max_num = max(max_num,V(i,j));
+            min_num = min(min_num,V(i,j));
+            if (abs(V(i,j)) >= 0.0 && abs(V(i,j)) < min_abs_upper0){
+                min_abs_upper0 = V(i,j);
+            }
+            if (abs(V(i,j)) <= 0.0 && abs(V(i,j)) < abs(min_abs_lower0)){
+                min_abs_lower0 = V(i,j);
+            }
+        }
+    }
+    std::cout << "Max_num in vector = " << fixed << setprecision(16) << max_num <<std::endl;
+    std::cout << "Min_num in vector = " << fixed << setprecision(16) << min_num <<std::endl;
+    std::cout << "Min_abs_upper0 in vector = " << fixed << setprecision(16) << min_abs_upper0 <<std::endl;
+    std::cout << "Min_abs_lower0 in vector = " << fixed << setprecision(16) << min_abs_lower0 <<std::endl;
+    return V;
+}
 
 
 enum SIZE_PARAMETERIZATION

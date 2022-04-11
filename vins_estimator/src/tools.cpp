@@ -1,6 +1,5 @@
 #include "tools.h"
 
-
 //parameters
 double INIT_DEPTH;
 double MIN_PARALLAX;
@@ -815,7 +814,8 @@ MarginalizationInfo::~MarginalizationInfo()
 }
 
 void MarginalizationInfo::addResidualBlockInfo(ResidualBlockInfo *residual_block_info)
-{
+{   
+    // std::cout << "MarginalizationInfo::addResidualBlockInfo" << std::endl;
     factors.emplace_back(residual_block_info);
 
     std::vector<double *> &parameter_blocks = residual_block_info->parameter_blocks;
@@ -920,9 +920,14 @@ void MarginalizationInfo::marginalize()
     {
         it.second = pos;
         pos += localSize(parameter_block_size[it.first]);
+        if(localSize(parameter_block_size[it.first])!=1){
+            std::cout << "pos rise : " << localSize(parameter_block_size[it.first]) << std::endl;
+        }
+        
     }
-
+    std::cout << "pos rise : " << pos << std::endl;
     m = pos;
+    std::cout << "m = " << m << std::endl;
 
     for (const auto &it : parameter_block_size)
     {
@@ -930,10 +935,13 @@ void MarginalizationInfo::marginalize()
         {
             parameter_block_idx[it.first] = pos;
             pos += localSize(it.second);
+            std::cout << "parameter_block_idx.find(it.first) == parameter_block_idx.end() : " << localSize(it.second) << std::endl;
         }
     }
 
     n = pos - m;
+    std::cout << "n = " << n << std::endl;
+
     //ROS_INFO("marginalization, pos: %d, m: %d, n: %d, size: %d", pos, m, n, (int)parameter_block_idx.size());
     if(m == 0)
     {
@@ -942,7 +950,13 @@ void MarginalizationInfo::marginalize()
         return;
     }
 
-    std::cout << "[m,n] = [" << m << "," << n << "];" << std::endl;
+    // std::cout << "[m,n] = [" << m << "," << n << "];" << std::endl;
+    static vector<int> matrix_width;
+    static int max_width = 0;
+    if (m+n > max_width){
+        max_width = m+n;
+    }
+    matrix_width.push_back(m+n);
     TicToc t_summing;
     Eigen::MatrixXd A(pos, pos);
     Eigen::VectorXd b(pos);
@@ -988,20 +1002,37 @@ void MarginalizationInfo::marginalize()
         //     printf("A diff %f , b diff %f ", (A - tmp_A).sum(), (b - tmp_b).sum());}
     std::cout << "marginalize part2 costs " << t_thread_summing.toc() << "ms" << endl;
 
-    //TODO
+// fix the floating point in matrix A and vector b
+#define isUseFixedPointProcessing 1
 
+#if isUseFixedPointProcessing
+    A = double_fixed_16_16_double(A);
+    b = double_fixed_16_16_double(b);
+#endif
+
+    //TODO
     TicToc t_compute;
+
+    // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
     Eigen::MatrixXd Amm = 0.5 * (A.block(0, 0, m, m) + A.block(0, 0, m, m).transpose());
 
-    // Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes(Amm);
+// #if isUseFixedPointProcessing
+//     Amm = double_fixed_16_16_double(Amm);
+// #endif
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes(Amm);
 
-    // //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
+    //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
 
-    // Eigen::MatrixXd Amm_inv = saes.eigenvectors() * Eigen::VectorXd((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
+    Eigen::MatrixXd Amm_inv = saes.eigenvectors() * Eigen::VectorXd((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
+    // std::cout << "saes.eigenvalues()" << saes.eigenvalues() << std::endl;
+    // std::cout << "saes.eigenvectors()" << saes.eigenvectors() << std::endl;
 
-    // //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
+// #if isUseFixedPointProcessing
+//     Amm_inv = double_fixed_16_16_double(Amm_inv);
+// #endif
+    //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
 
-    Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
+    // Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
 
     Eigen::VectorXd bmm = b.segment(0, m);
     Eigen::MatrixXd Amr = A.block(0, m, m, n);
@@ -1011,6 +1042,11 @@ void MarginalizationInfo::marginalize()
     A = Arr - Arm * Amm_inv * Amr;
     b = brr - Arm * Amm_inv * bmm;
 
+// #if isUseFixedPointProcessing
+//     A = double_fixed_16_16_double(A);
+//     b = double_fixed_16_16_double(b);
+// #endif
+
     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes2(A);
     Eigen::VectorXd S = Eigen::VectorXd((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array(), 0));
     Eigen::VectorXd S_inv = Eigen::VectorXd((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array().inverse(), 0));
@@ -1018,12 +1054,30 @@ void MarginalizationInfo::marginalize()
     Eigen::VectorXd S_sqrt = S.cwiseSqrt();
     Eigen::VectorXd S_inv_sqrt = S_inv.cwiseSqrt();
 
+// #if isUseFixedPointProcessing
+//     S = double_fixed_16_16_double(S);
+//     S_inv = double_fixed_16_16_double(S_inv);
+//     S_sqrt = double_fixed_16_16_double(S_sqrt);
+//     S_inv_sqrt = double_fixed_16_16_double(S_inv_sqrt);
+// #endif
+
     linearized_jacobians = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
     linearized_residuals = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * b;
+
+// #if isUseFixedPointProcessing
+//     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
+//     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
+// #endif
 
     std::cout << "marginalize part3 costs " << t_compute.toc() << "ms" << endl;
 
     std::cout << "MarginalizationInfo::marginalize costs " << t_marg.toc() << "ms" << endl;
+
+    // std::cout << "Matrix Width:\n";
+    // for(auto &width:matrix_width){
+    //     std::cout << width << ",";
+    // }
+    std::cout << "Max width : " << max_width << std::endl;
 }
 
 std::vector<double *> MarginalizationInfo::getParameterBlocks(std::unordered_map<long, double *> &addr_shift)
@@ -4951,6 +5005,7 @@ void Estimator::optimization()
 
         {
             int feature_index = -1;
+            std::cout << "f_manager.feature : " << f_manager.feature.size() << std::endl;
             for (auto &it_per_id : f_manager.feature)
             {
                 it_per_id.used_num = it_per_id.feature_per_frame.size();
@@ -4965,6 +5020,7 @@ void Estimator::optimization()
 
                 Vector3d pts_i = it_per_id.feature_per_frame[0].point;
 
+                // std::cout << "it_per_id.feature_per_frame : " << it_per_id.feature_per_frame.size() << std::endl;
                 for (auto &it_per_frame : it_per_id.feature_per_frame)
                 {
                     imu_j++;
@@ -5266,7 +5322,7 @@ void Estimator::predictPtsInNextFrame()
             int firstIndex = it_per_id.start_frame;
             int lastIndex = it_per_id.start_frame + it_per_id.feature_per_frame.size() - 1;
             if(SHOW_TMI)
-                printf("cur frame index  %d last frame index %d\n", frame_count, lastIndex);
+                // printf("cur frame index  %d last frame index %d\n", frame_count, lastIndex);
             if((int)it_per_id.feature_per_frame.size() >= 2 && lastIndex == frame_count)
             {
                 double depth = it_per_id.estimated_depth;
