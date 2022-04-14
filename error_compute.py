@@ -219,7 +219,7 @@ class TimeRegistration():
             es_first_flag = es_first_flag + 1
         while self.es_poses[es_last_flag].timestamp > self.gt_poses[-1].timestamp:
             es_last_flag = es_last_flag - 1
-        self.es_poses_selected = self.es_poses[es_first_flag:]
+        self.es_poses_selected = self.es_poses[es_first_flag:es_last_flag]
         for es_pose in self.es_poses_selected:
             es_timestamp = es_pose.timestamp
             while es_timestamp < self.gt_poses[gt_flag].timestamp or es_timestamp > self.gt_poses[gt_flag+1].timestamp:
