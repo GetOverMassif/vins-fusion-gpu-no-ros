@@ -1014,101 +1014,23 @@ void MarginalizationInfo::marginalize()
 #endif
 
 // ************************************************************************************************************************************************
-    /*double*/
-
-    //TODO
-    TicToc t_compute;
-
-    Eigen::MatrixXf Af = matrixd2f(A);
-    Eigen::VectorXf bf = matrixd2f(b);
-
-    // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
-    Eigen::MatrixXf Amm = 0.5 * (Af.block(0, 0, m, m) + Af.block(0, 0, m, m).transpose());
-    
-// #if isUseFixedPointProcessing
-//     Amm = double_fixed_16_16_double(Amm);
-// #endif
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> saes(Amm);
-
-    //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
-
-    Eigen::MatrixXf Amm_inv = saes.eigenvectors() * Eigen::VectorXf((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
-    // std::cout << "saes.eigenvalues()" << saes.eigenvalues() << std::endl;
-    // std::cout << "saes.eigenvectors()" << saes.eigenvectors() << std::endl;
-
-// #if isUseFixedPointProcessing
-//     Amm_inv = double_fixed_16_16_double(Amm_inv);
-// #endif
-    //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
-
-    // Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
-
-    Eigen::VectorXf bmm = bf.segment(0, m);
-    Eigen::MatrixXf Amr = Af.block(0, m, m, n);
-    Eigen::MatrixXf Arm = Af.block(m, 0, n, m);
-    Eigen::MatrixXf Arr = Af.block(m, m, n, n);
-    Eigen::VectorXf brr = bf.segment(m, n);
-    Af = Arr - Arm * Amm_inv * Amr;
-    bf = brr - Arm * Amm_inv * bmm;
-
-// #if isUseFixedPointProcessing
-//     A = double_fixed_16_16_double(A);
-//     b = double_fixed_16_16_double(b);
-// #endif
-
-    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> saes2(Af);
-    Eigen::VectorXf S = Eigen::VectorXf((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array(), 0));
-    Eigen::VectorXf S_inv = Eigen::VectorXf((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array().inverse(), 0));
-
-    Eigen::VectorXf S_sqrt = S.cwiseSqrt();
-    Eigen::VectorXf S_inv_sqrt = S_inv.cwiseSqrt();
-
-// #if isUseFixedPointProcessing
-//     S = double_fixed_16_16_double(S);
-//     S_inv = double_fixed_16_16_double(S_inv);
-//     S_sqrt = double_fixed_16_16_double(S_sqrt);
-//     S_inv_sqrt = double_fixed_16_16_double(S_inv_sqrt);
-// #endif
-
-    Eigen::MatrixXf linearized_jacobians_f = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
-    Eigen::MatrixXf linearized_residuals_f = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * bf;
-
-    linearized_jacobians = matrixf2d(linearized_jacobians_f);
-    linearized_residuals = matrixf2d(linearized_residuals_f);
-
-// #if isUseFixedPointProcessing
-//     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
-//     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
-// #endif
-
-// ************************************************************************************************************************************************
-//     /*float*/
+    /*float*/
 
 //     //TODO
 //     TicToc t_compute;
 
-//     // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
-//     Eigen::MatrixXf Af = A.cast<float>();
-//     Eigen::VectorXf bf = f.cast<float>();
-//     Eigen::MatrixXf Amm = 0.5 * (Af.block(0, 0, m, m) + Af.block(0, 0, m, m).transpose());
+//     Eigen::MatrixXf Af = matrixd2f(A);
+//     Eigen::VectorXf bf = matrixd2f(b);
 
+//     // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
+//     Eigen::MatrixXf Amm = 0.5 * (Af.block(0, 0, m, m) + Af.block(0, 0, m, m).transpose());
+    
 // // #if isUseFixedPointProcessing
 // //     Amm = double_fixed_16_16_double(Amm);
 // // #endif
 //     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> saes(Amm);
 
-//     //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
-
 //     Eigen::MatrixXf Amm_inv = saes.eigenvectors() * Eigen::VectorXf((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
-//     // std::cout << "saes.eigenvalues()" << saes.eigenvalues() << std::endl;
-//     // std::cout << "saes.eigenvectors()" << saes.eigenvectors() << std::endl;
-
-// // #if isUseFixedPointProcessing
-// //     Amm_inv = double_fixed_16_16_double(Amm_inv);
-// // #endif
-//     //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
-
-//     // Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
 
 //     Eigen::VectorXf bmm = bf.segment(0, m);
 //     Eigen::MatrixXf Amr = Af.block(0, m, m, n);
@@ -1137,13 +1059,67 @@ void MarginalizationInfo::marginalize()
 // //     S_inv_sqrt = double_fixed_16_16_double(S_inv_sqrt);
 // // #endif
 
-//     linearized_jacobians = (S_sqrt.asDiagonal() * saes2.eigenvectors().transpose()).cast<double>();
-//     linearized_residuals = (S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * b).cast<double>();
+//     Eigen::MatrixXf linearized_jacobians_f = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
+//     Eigen::MatrixXf linearized_residuals_f = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * bf;
+
+//     linearized_jacobians = matrixf2d(linearized_jacobians_f);
+//     linearized_residuals = matrixf2d(linearized_residuals_f);
 
 // // #if isUseFixedPointProcessing
 // //     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
 // //     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
 // // #endif
+
+// ************************************************************************************************************************************************
+//     /*double*/
+
+    //TODO
+    TicToc t_compute;
+
+    // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
+    Eigen::MatrixXd Amm = 0.5 * (A.block(0, 0, m, m) + A.block(0, 0, m, m).transpose());
+    
+// #if isUseFixedPointProcessing
+//     Amm = double_fixed_16_16_double(Amm);
+// #endif
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes(Amm);
+
+    Eigen::MatrixXd Amm_inv = saes.eigenvectors() * Eigen::VectorXd((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
+
+    Eigen::VectorXd bmm = b.segment(0, m);
+    Eigen::MatrixXd Amr = A.block(0, m, m, n);
+    Eigen::MatrixXd Arm = A.block(m, 0, n, m);
+    Eigen::MatrixXd Arr = A.block(m, m, n, n);
+    Eigen::VectorXd brr = b.segment(m, n);
+    A = Arr - Arm * Amm_inv * Amr;
+    b = brr - Arm * Amm_inv * bmm;
+
+// #if isUseFixedPointProcessing
+//     A = double_fixed_16_16_double(A);
+//     b = double_fixed_16_16_double(b);
+// #endif
+
+    Eigen::SelfAdjointEigenSolver<Eigen::MatrixXd> saes2(A);
+    Eigen::VectorXd S = Eigen::VectorXd((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array(), 0));
+    Eigen::VectorXd S_inv = Eigen::VectorXd((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array().inverse(), 0));
+
+    Eigen::VectorXd S_sqrt = S.cwiseSqrt();
+    Eigen::VectorXd S_inv_sqrt = S_inv.cwiseSqrt();
+
+// #if isUseFixedPointProcessing
+//     S = double_fixed_16_16_double(S);
+//     S_inv = double_fixed_16_16_double(S_inv);
+//     S_sqrt = double_fixed_16_16_double(S_sqrt);
+//     S_inv_sqrt = double_fixed_16_16_double(S_inv_sqrt);
+// #endif
+
+    linearized_jacobians = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
+    linearized_residuals = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * bf;
+
+// #if isUseFixedPointProcessing
+//     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
+//     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
+// #endif
 
 // // ************************************************************************************************************************************************
 
