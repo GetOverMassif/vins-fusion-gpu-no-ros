@@ -178,6 +178,53 @@ Eigen::VectorXd double_fixed_16_16_double(Eigen::VectorXd raw_V)
     return V;
 }
 
+Eigen::MatrixXf matrixd2f(Eigen::MatrixXd M){
+    int row = M.rows();
+    int col = M.cols();
+    Eigen::MatrixXf Mf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Mf(i,j)=(float)M(i,j);
+        }
+    }
+    return Mf;
+}
+
+Eigen::VectorXf matrixd2f(Eigen::VectorXd V){
+    int row = V.rows();
+    int col = V.cols();
+    Eigen::MatrixXf Vf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Vf(i,j)=(float)V(i,j);
+        }
+    }
+    return Vf;
+}
+
+Eigen::MatrixXd matrixf2d(Eigen::MatrixXf M){
+    int row = M.rows();
+    int col = M.cols();
+    Eigen::MatrixXd Md(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Md(i,j)=(double)M(i,j);
+        }
+    }
+    return Md;
+}
+
+Eigen::VectorXd matrixf2d(Eigen::VectorXf V){
+    int row = V.rows();
+    int col = V.cols();
+    Eigen::MatrixXd Vd(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Vd(i,j)=(double)V(i,j);
+        }
+    }
+    return Vd;
+}
 
 enum SIZE_PARAMETERIZATION
 {
