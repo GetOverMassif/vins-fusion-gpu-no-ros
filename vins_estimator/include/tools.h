@@ -133,6 +133,7 @@ Eigen::MatrixXd double_fixed_16_16_double(Eigen::MatrixXd raw_M)
             if (abs(M(i,j)) <= 0.0 && abs(M(i,j)) < abs(min_abs_lower0)){
                 min_abs_lower0 = M(i,j);
             }
+            // M(i,j) = (double)((float)M(i,j));
         }
     }
     std::cout << "Max_num in matrix = " << fixed << setprecision(16) << max_num <<std::endl;
@@ -167,6 +168,7 @@ Eigen::VectorXd double_fixed_16_16_double(Eigen::VectorXd raw_V)
             if (abs(V(i,j)) <= 0.0 && abs(V(i,j)) < abs(min_abs_lower0)){
                 min_abs_lower0 = V(i,j);
             }
+            // V(i,j) = (double)((float)V(i,j));
         }
     }
     std::cout << "Max_num in vector = " << fixed << setprecision(16) << max_num <<std::endl;

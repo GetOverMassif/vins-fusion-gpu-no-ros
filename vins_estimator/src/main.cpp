@@ -3,7 +3,7 @@
 
 #define _USE_MATH_DEFINES
 #define SHOW_UNDISTORTION 0
-#define ADJUST_RESOLUTION 1
+#define ADJUST_RESOLUTION 0
 
 // static FeatureTracker trackerData[NUM_OF_CAM];
 static Estimator estimator;

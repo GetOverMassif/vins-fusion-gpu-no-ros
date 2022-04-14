@@ -916,29 +916,32 @@ void MarginalizationInfo::marginalize()
     TicToc t_marg;
     TicToc t_init;
     int pos = 0;
+    std::cout << "pos rise : ";
     for (auto &it : parameter_block_idx)
     {
         it.second = pos;
         pos += localSize(parameter_block_size[it.first]);
         if(localSize(parameter_block_size[it.first])!=1){
-            std::cout << "pos rise : " << localSize(parameter_block_size[it.first]) << std::endl;
+            std::cout << localSize(parameter_block_size[it.first]) << " ";
         }
         
     }
-    std::cout << "pos rise : " << pos << std::endl;
+    std::cout << std::endl;
+    // std::cout << "pos rise : " << pos << std::endl;
     m = pos;
     std::cout << "m = " << m << std::endl;
-
+    std::cout << "pos rise : ";
     for (const auto &it : parameter_block_size)
     {
         if (parameter_block_idx.find(it.first) == parameter_block_idx.end())
         {
             parameter_block_idx[it.first] = pos;
             pos += localSize(it.second);
-            std::cout << "parameter_block_idx.find(it.first) == parameter_block_idx.end() : " << localSize(it.second) << std::endl;
+            // std::cout << "parameter_block_idx.find(it.first) == parameter_block_idx.end() : " << localSize(it.second) << std::endl;
+            std::cout << localSize(it.second) << " ";
         }
     }
-
+    std::cout << std::endl;
     n = pos - m;
     std::cout << "n = " << n << std::endl;
 
@@ -1010,6 +1013,9 @@ void MarginalizationInfo::marginalize()
     b = double_fixed_16_16_double(b);
 #endif
 
+// ************************************************************************************************************************************************
+    /*double*/
+
     //TODO
     TicToc t_compute;
 
@@ -1069,14 +1075,80 @@ void MarginalizationInfo::marginalize()
 //     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
 // #endif
 
+// ************************************************************************************************************************************************
+//     /*float*/
+
+//     //TODO
+//     TicToc t_compute;
+
+//     // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
+//     Eigen::MatrixXf Af = A.cast<float>();
+//     Eigen::VectorXf bf = f.cast<float>();
+//     Eigen::MatrixXf Amm = 0.5 * (Af.block(0, 0, m, m) + Af.block(0, 0, m, m).transpose());
+
+// // #if isUseFixedPointProcessing
+// //     Amm = double_fixed_16_16_double(Amm);
+// // #endif
+//     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> saes(Amm);
+
+//     //ROS_ASSERT_MSG(saes.eigenvalues().minCoeff() >= -1e-4, "min eigenvalue %f", saes.eigenvalues().minCoeff());
+
+//     Eigen::MatrixXf Amm_inv = saes.eigenvectors() * Eigen::VectorXf((saes.eigenvalues().array() > eps).select(saes.eigenvalues().array().inverse(), 0)).asDiagonal() * saes.eigenvectors().transpose();
+//     // std::cout << "saes.eigenvalues()" << saes.eigenvalues() << std::endl;
+//     // std::cout << "saes.eigenvectors()" << saes.eigenvectors() << std::endl;
+
+// // #if isUseFixedPointProcessing
+// //     Amm_inv = double_fixed_16_16_double(Amm_inv);
+// // #endif
+//     //printf("error1: %f\n", (Amm * Amm_inv - Eigen::MatrixXd::Identity(m, m)).sum());
+
+//     // Eigen::MatrixXd Amm_inv = A.block(0,0,m,m).inverse();
+
+//     Eigen::VectorXf bmm = bf.segment(0, m);
+//     Eigen::MatrixXf Amr = Af.block(0, m, m, n);
+//     Eigen::MatrixXf Arm = Af.block(m, 0, n, m);
+//     Eigen::MatrixXf Arr = Af.block(m, m, n, n);
+//     Eigen::VectorXf brr = bf.segment(m, n);
+//     Af = Arr - Arm * Amm_inv * Amr;
+//     bf = brr - Arm * Amm_inv * bmm;
+
+// // #if isUseFixedPointProcessing
+// //     A = double_fixed_16_16_double(A);
+// //     b = double_fixed_16_16_double(b);
+// // #endif
+
+//     Eigen::SelfAdjointEigenSolver<Eigen::MatrixXf> saes2(Af);
+//     Eigen::VectorXf S = Eigen::VectorXf((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array(), 0));
+//     Eigen::VectorXf S_inv = Eigen::VectorXf((saes2.eigenvalues().array() > eps).select(saes2.eigenvalues().array().inverse(), 0));
+
+//     Eigen::VectorXf S_sqrt = S.cwiseSqrt();
+//     Eigen::VectorXf S_inv_sqrt = S_inv.cwiseSqrt();
+
+// // #if isUseFixedPointProcessing
+// //     S = double_fixed_16_16_double(S);
+// //     S_inv = double_fixed_16_16_double(S_inv);
+// //     S_sqrt = double_fixed_16_16_double(S_sqrt);
+// //     S_inv_sqrt = double_fixed_16_16_double(S_inv_sqrt);
+// // #endif
+
+//     linearized_jacobians = (S_sqrt.asDiagonal() * saes2.eigenvectors().transpose()).cast<double>();
+//     linearized_residuals = (S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * b).cast<double>();
+
+// // #if isUseFixedPointProcessing
+// //     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
+// //     linearized_residuals = double_fixed_16_16_double(linearized_residuals);
+// // #endif
+
+// // ************************************************************************************************************************************************
+
     std::cout << "marginalize part3 costs " << t_compute.toc() << "ms" << endl;
 
     std::cout << "MarginalizationInfo::marginalize costs " << t_marg.toc() << "ms" << endl;
 
-    // std::cout << "Matrix Width:\n";
-    // for(auto &width:matrix_width){
-    //     std::cout << width << ",";
-    // }
+    std::cout << "Matrix Width:\n";
+    for(auto &width:matrix_width){
+        std::cout << width << ",";
+    }
     std::cout << "Max width : " << max_width << std::endl;
 }
 
