@@ -1,4 +1,4 @@
-/home/lj/Downloads/Install/clion-2021.3.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -DCMAKE_MAKE_PROGRAM=/home/lj/Downloads/Install/clion-2021.3.3/bin/ninja/linux/ninja -G Ninja /home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator
+/home/lj/Downloads/Install/clion-2021.3.3/bin/cmake/linux/bin/cmake -DCMAKE_BUILD_TYPE=Debug -G "CodeBlocks - Unix Makefiles" /home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator
 CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
   Compatibility with CMake < 2.8.12 will be removed from a future version of
   CMake.
@@ -21,41 +21,14 @@ CMake Deprecation Warning at CMakeLists.txt:1 (cmake_minimum_required):
 -- Detecting CXX compile features - done
 -- Found OpenCV: /usr (found version "4.2.0") 
 --     version: 4.2.0
--- Looking for pthread.h
--- Looking for pthread.h - found
--- Performing Test CMAKE_HAVE_LIBC_PTHREAD
--- Performing Test CMAKE_HAVE_LIBC_PTHREAD - Failed
--- Looking for pthread_create in pthreads
--- Looking for pthread_create in pthreads - not found
--- Looking for pthread_create in pthread
--- Looking for pthread_create in pthread - found
--- Found Threads: TRUE  
--- Found CXSparse: /usr/include/suitesparse (found suitable version "3.2.0", minimum required is "3.2.0") 
-CMake Warning (dev) at /usr/local/lib/cmake/Ceres/FindSuiteSparse.cmake:115 (if):
-  Policy CMP0057 is not set: Support new IN_LIST if() operator.  Run "cmake
-  --help-policy CMP0057" for policy details.  Use the cmake_policy command to
-  set the policy and suppress this warning.
-
-  IN_LIST will be interpreted as an operator when the policy is set to NEW.
-  Since the policy is not set the OLD behavior will be used.
-Call Stack (most recent call first):
-  /home/lj/Downloads/Install/clion-2021.3.3/bin/cmake/linux/share/cmake-3.21/Modules/CMakeFindDependencyMacro.cmake:47 (find_package)
-  /usr/local/lib/cmake/Ceres/CeresConfig.cmake:183 (find_dependency)
-  CMakeLists.txt:19 (find_package)
-This warning is for project developers.  Use -Wno-dev to suppress it.
-
-CMake Error at /usr/local/lib/cmake/Ceres/FindSuiteSparse.cmake:115 (if):
-  if given arguments:
-
-    "CHOLMOD" "IN_LIST" "SuiteSparse_FIND_COMPONENTS"
-
-  Unknown arguments specified
-Call Stack (most recent call first):
-  /home/lj/Downloads/Install/clion-2021.3.3/bin/cmake/linux/share/cmake-3.21/Modules/CMakeFindDependencyMacro.cmake:47 (find_package)
-  /usr/local/lib/cmake/Ceres/CeresConfig.cmake:183 (find_dependency)
-  CMakeLists.txt:19 (find_package)
-
-
--- Configuring incomplete, errors occurred!
-See also "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/cmake-build-debug/CMakeFiles/CMakeOutput.log".
-See also "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/cmake-build-debug/CMakeFiles/CMakeError.log".
+-- Found installed version of Eigen: /usr/local/share/eigen3/cmake
+-- Found required Ceres dependency: Eigen version 3.3.7 in /usr/local/include/eigen3
+-- Found required Ceres dependency: glog
+-- Found installed version of gflags: /usr/lib/x86_64-linux-gnu/cmake/gflags
+-- Detected gflags version: 2.2.2
+-- Found required Ceres dependency: gflags
+-- Found Ceres version: 1.14.0 installed in: /usr/local with components: [EigenSparse, SparseLinearAlgebraLibrary, LAPACK, SuiteSparse, CXSparse, SchurSpecializations, OpenMP, Multithreading]
+-- Found Boost: /usr/lib/x86_64-linux-gnu/cmake/Boost-1.71.0/BoostConfig.cmake (found version "1.71.0") found components: filesystem program_options system 
+-- Configuring done
+-- Generating done
+-- Build files have been written to: /home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/cmake-build-debug

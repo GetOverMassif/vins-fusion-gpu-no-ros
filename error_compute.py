@@ -7,6 +7,7 @@ import csv
 import numpy as np
 import math
 from matplotlib import pyplot as plt
+import transformation_3d as t3d
 
 es_poses_path = "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt"
 gt_poses_path = "/home/lj/data/V1_01_easy/mav0/state_groundtruth_estimate0/data.csv"
@@ -148,19 +149,19 @@ class Pose():
             # 位姿插值
             # print("Time:",time1,time1)
             h = (timestamp_-time1) / (time2-time1)
-            # print("h = ",h)
+            
             p_x_ = (1.0-h)*pose1.p_x+h*pose2.p_x
             p_y_ = (1.0-h)*pose1.p_y+h*pose2.p_y
             p_z_ = (1.0-h)*pose1.p_z+h*pose2.p_z
-            q_w_ = (1.0-h)*pose1.q_w+h*pose2.q_w
-            q_x_ = (1.0-h)*pose1.q_x+h*pose2.q_x
-            q_y_ = (1.0-h)*pose1.q_y+h*pose2.q_y
-            q_z_ = (1.0-h)*pose1.q_z+h*pose2.q_z
-            norm = (q_w_**2+q_x_**2+q_y_**2+q_z_**2)**0.5
-            q_w_ = q_w_ / norm
-            q_x_ = q_x_ / norm
-            q_y_ = q_y_ / norm
-            q_z_ = q_z_ / norm
+
+            q1 = np.array([pose1.q_w,pose1.q_x,pose1.q_y,pose1.q_z])
+            q2 = np.array([pose2.q_w,pose2.q_x,pose2.q_y,pose2.q_z])
+            qt = t3d.merge1(q1,q2,h)
+            q_w_ = qt[0]
+            q_x_ = qt[1]
+            q_y_ = qt[2]
+            q_z_ = qt[3]
+
             pose_interpolated = Pose.init2(timestamp_,p_x_,p_y_,p_z_,q_w_,q_x_,q_y_,q_z_)
             # pose_interpolated.printValue()
             return pose_interpolated

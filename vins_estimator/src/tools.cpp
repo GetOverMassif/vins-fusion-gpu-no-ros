@@ -1006,6 +1006,8 @@ void MarginalizationInfo::marginalize()
     std::cout << "marginalize part2 costs " << t_thread_summing.toc() << "ms" << endl;
 
 // fix the floating point in matrix A and vector b
+    //TODO
+    TicToc t_compute;
 #define isUseFixedPointProcessing 1
 
 #if isUseFixedPointProcessing
@@ -1015,9 +1017,6 @@ void MarginalizationInfo::marginalize()
 
 // ************************************************************************************************************************************************
     /*float*/
-
-//     //TODO
-//     TicToc t_compute;
 
 //     Eigen::MatrixXf Af = matrixd2f(A);
 //     Eigen::VectorXf bf = matrixd2f(b);
@@ -1073,9 +1072,6 @@ void MarginalizationInfo::marginalize()
 // ************************************************************************************************************************************************
 //     /*double*/
 
-    //TODO
-    TicToc t_compute;
-
     // std::cout << "【Matrix A】\n" << A.matrix().cwiseMax << std::endl;
     Eigen::MatrixXd Amm = 0.5 * (A.block(0, 0, m, m) + A.block(0, 0, m, m).transpose());
     
@@ -1114,7 +1110,7 @@ void MarginalizationInfo::marginalize()
 // #endif
 
     linearized_jacobians = S_sqrt.asDiagonal() * saes2.eigenvectors().transpose();
-    linearized_residuals = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * bf;
+    linearized_residuals = S_inv_sqrt.asDiagonal() * saes2.eigenvectors().transpose() * b;
 
 // #if isUseFixedPointProcessing
 //     linearized_jacobians = double_fixed_16_16_double(linearized_jacobians);
@@ -1126,12 +1122,20 @@ void MarginalizationInfo::marginalize()
     std::cout << "marginalize part3 costs " << t_compute.toc() << "ms" << endl;
 
     std::cout << "MarginalizationInfo::marginalize costs " << t_marg.toc() << "ms" << endl;
+    static std::vector<double> time_compute_record;
+    time_compute_record.push_back(t_marg.toc());
 
-    std::cout << "Matrix Width:\n";
-    for(auto &width:matrix_width){
-        std::cout << width << ",";
+    // std::cout << "Matrix Width:\n";
+    // for(auto &width:matrix_width){
+    //     std::cout << width << ",";
+    // }
+    std::cout << "Time cost on computing:" << std::endl;
+    for(auto &time:time_compute_record){
+        std::cout << setprecision(3) << time << ",";
     }
-    std::cout << "Max width : " << max_width << std::endl;
+    std::cout << std::endl;
+
+    std::cout << setprecision(3) << "Max width : " << max_width << std::endl;
 }
 
 std::vector<double *> MarginalizationInfo::getParameterBlocks(std::unordered_map<long, double *> &addr_shift)
