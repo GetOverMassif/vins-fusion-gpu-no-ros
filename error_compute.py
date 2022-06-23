@@ -278,7 +278,7 @@ class TimeRegistration():
         l1 = ax.plot(range(len(translation_list)),translation_list)
         l2 = ax.plot(range(len(RPE_list)),RPE_list)
         l2 = ax.plot(range(len(ATE_list)),ATE_list)
-        ax.legend(labels = ('relative movement','relative pose error','absolute trajectory error'), loc = 'higher left')
+        ax.legend(labels = ('relative movement','relative pose error','absolute trajectory error'), loc = 'upper left')
         ax.set_title("trajectory error")
         ax.set_xlabel("frame id")
         ax.set_ylabel("distance /m")
