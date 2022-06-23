@@ -200,7 +200,7 @@ int main(int argc, char **argv)
 
     ofstream myfile;
     // create log file
-    myfile.open (LOG_FILE_NAME, ios::trunc);\
+    myfile.open (LOG_FILE_NAME, ios::trunc);
     myfile << "\n";
     myfile.close();
 

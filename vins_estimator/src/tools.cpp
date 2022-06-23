@@ -747,6 +747,7 @@ double FeatureManager::compensatedParallax2(const FeaturePerId &it_per_id, int f
 //marginalization
 void ResidualBlockInfo::Evaluate()
 {
+    std::cout << "ResidualBlockInfo::Evaluate" << std::endl;
     residuals.resize(cost_function->num_residuals());
 
     std::vector<int> block_sizes = cost_function->parameter_block_sizes();
@@ -1006,9 +1007,8 @@ void MarginalizationInfo::marginalize()
     std::cout << "marginalize part2 costs " << t_thread_summing.toc() << "ms" << endl;
 
 // fix the floating point in matrix A and vector b
-    //TODO
     TicToc t_compute;
-#define isUseFixedPointProcessing 1
+#define isUseFixedPointProcessing 0
 
 #if isUseFixedPointProcessing
     A = double_fixed_16_16_double(A);
@@ -1129,10 +1129,10 @@ void MarginalizationInfo::marginalize()
     // for(auto &width:matrix_width){
     //     std::cout << width << ",";
     // }
-    std::cout << "Time cost on computing:" << std::endl;
-    for(auto &time:time_compute_record){
-        std::cout << setprecision(3) << time << ",";
-    }
+    // std::cout << "Time cost on computing:" << std::endl;
+    // for(auto &time:time_compute_record){
+    //     std::cout << setprecision(3) << time << ",";
+    // }
     std::cout << std::endl;
 
     std::cout << setprecision(3) << "Max width : " << max_width << std::endl;
@@ -1182,6 +1182,7 @@ bool MarginalizationFactor::Evaluate(double const *const *parameters, double *re
     //printf("jacobian %x\n", reinterpret_cast<long>(jacobians));
     //printf("residual %x\n", reinterpret_cast<long>(residuals));
     //}
+    std::cout << "MarginalizationFactor::Evaluate" << std::endl;
     int n = marginalization_info->n;
     int m = marginalization_info->m;
     Eigen::VectorXd dx(n);
@@ -2142,6 +2143,7 @@ ProjectionFactor::ProjectionFactor(const Eigen::Vector3d &_pts_i, const Eigen::V
 
 bool ProjectionFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
+    std::cout << "ProjectionFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2377,6 +2379,7 @@ ProjectionOneFrameTwoCamFactor::ProjectionOneFrameTwoCamFactor(const Eigen::Vect
 
 bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
+    std::cout << "ProjectionOneFrameTwoCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
 
     Eigen::Vector3d tic(parameters[0][0], parameters[0][1], parameters[0][2]);
@@ -2614,6 +2617,7 @@ ProjectionTwoFrameOneCamFactor::ProjectionTwoFrameOneCamFactor(const Eigen::Vect
 
 bool ProjectionTwoFrameOneCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
+    std::cout << "ProjectionTwoFrameOneCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2874,6 +2878,7 @@ ProjectionTwoFrameTwoCamFactor::ProjectionTwoFrameTwoCamFactor(const Eigen::Vect
 
 bool ProjectionTwoFrameTwoCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
+    std::cout << "ProjectionTwoFrameTwoCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -4933,7 +4938,7 @@ void Estimator::optimization()
         // construct new marginlization_factor
         MarginalizationFactor *marginalization_factor = new MarginalizationFactor(last_marginalization_info);
         problem.AddResidualBlock(marginalization_factor, NULL,
-                                 last_marginalization_parameter_blocks);
+                                    last_marginalization_parameter_blocks);
     }
     if(USE_IMU)
     {
@@ -4968,7 +4973,7 @@ void Estimator::optimization()
             {
                 Vector3d pts_j = it_per_frame.point;
                 ProjectionTwoFrameOneCamFactor *f_td = new ProjectionTwoFrameOneCamFactor(pts_i, pts_j, it_per_id.feature_per_frame[0].velocity, it_per_frame.velocity,
-                                                                 it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
+                                                                    it_per_id.feature_per_frame[0].cur_td, it_per_frame.cur_td);
                 problem.AddResidualBlock(f_td, loss_function, para_Pose[imu_i], para_Pose[imu_j], para_Ex_Pose[0], para_Feature[feature_index], para_Td[0]);
             }
 
@@ -4999,7 +5004,8 @@ void Estimator::optimization()
 
     ceres::Solver::Options options;
 
-    options.linear_solver_type = ceres::DENSE_SCHUR;
+    // options.linear_solver_type = ceres::DENSE_SCHUR;
+    options.linear_solver_type = ceres::SPARSE_SCHUR;
     //options.num_threads = 2;
     options.trust_region_strategy_type = ceres::DOGLEG;
     options.max_num_iterations = NUM_ITERATIONS;
@@ -5013,12 +5019,44 @@ void Estimator::optimization()
     TicToc t_solver;
     ceres::Solver::Summary summary;
     ceres::Solve(options, &problem, &summary);  // MARK_JT
-
+    
     if(SHOW_TMI){
+        static vector<float> preprocessor_time;
+        static vector<float> minimizer_time;
+        static vector<float> postprocessor_time;
+        static vector<float> total_time;
+        cout << "********************************************************" << endl;
         cout << summary.BriefReport() << endl;
         printf("Iterations : %d \n", static_cast<int>(summary.iterations.size()));
-        printf("solver costs: %f \n", t_solver.toc());}
+        printf("solver costs: %f \n", t_solver.toc());
+        printf("preprocessor costs:%f \n", summary.preprocessor_time_in_seconds);
+        printf("minimizer costs:%f \n", summary.minimizer_time_in_seconds);
+        printf("postprocessor costs:%f \n", summary.postprocessor_time_in_seconds);
+        printf("total costs:%f \n", summary.total_time_in_seconds);
+        cout << "********************************************************" << endl;
+        // preprocessor_time.push_back(summary.preprocessor_time_in_seconds);
+        // minimizer_time.push_back(summary.minimizer_time_in_seconds);
+        // postprocessor_time.push_back(summary.postprocessor_time_in_seconds);
+        // total_time.push_back(summary.total_time_in_seconds);
 
+        // std::cout << "Time cost on preprocessor:" << std::endl;
+        // for(auto &time:preprocessor_time){
+        //     std::cout << setprecision(3) << time << ",";
+        // }
+        // std::cout << "Time cost on minimizer:" << std::endl;
+        // for(auto &time:minimizer_time){
+        //     std::cout << setprecision(3) << time << ",";
+        // }
+        // std::cout << "Time cost on postprocessor:" << std::endl;
+        // for(auto &time:postprocessor_time){
+        //     std::cout << setprecision(3) << time << ",";
+        // }
+        // std::cout << "Time cost in total:" << std::endl;
+        // for(auto &time:total_time){
+        //     std::cout << setprecision(3) << time << ",";
+        // }
+    }
+    
     double2vector();
     if(SHOW_TMI)
         printf("frame_count: %d \n", frame_count);

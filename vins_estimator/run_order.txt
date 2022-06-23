@@ -1,0 +1,1 @@
+./vins_estimator ../../config/stereo.yaml /home/lj/data/V1_01_easy/mav0/cam0/data /home/lj/data/V1_01_easy/mav0/cam1/data ../../euroc_data_timestamp/V101.txt ../../euroc_data_timestamp/V101.txt /home/lj/data/V1_01_easy/mav0/imu0/data.csv
