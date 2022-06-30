@@ -1,4 +1,5 @@
 #include "tools.h"
+#define useFloatInEvaluate 0
 
 //parameters
 double INIT_DEPTH;
@@ -747,7 +748,7 @@ double FeatureManager::compensatedParallax2(const FeaturePerId &it_per_id, int f
 //marginalization
 void ResidualBlockInfo::Evaluate()
 {
-    std::cout << "ResidualBlockInfo::Evaluate" << std::endl;
+    // std::cout << "ResidualBlockInfo::Evaluate" << std::endl;
     residuals.resize(cost_function->num_residuals());
 
     std::vector<int> block_sizes = cost_function->parameter_block_sizes();
@@ -1182,7 +1183,7 @@ bool MarginalizationFactor::Evaluate(double const *const *parameters, double *re
     //printf("jacobian %x\n", reinterpret_cast<long>(jacobians));
     //printf("residual %x\n", reinterpret_cast<long>(residuals));
     //}
-    std::cout << "MarginalizationFactor::Evaluate" << std::endl;
+    // std::cout << "MarginalizationFactor::Evaluate" << std::endl;
     int n = marginalization_info->n;
     int m = marginalization_info->m;
     Eigen::VectorXd dx(n);
@@ -2143,7 +2144,7 @@ ProjectionFactor::ProjectionFactor(const Eigen::Vector3d &_pts_i, const Eigen::V
 
 bool ProjectionFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
-    std::cout << "ProjectionFactor::Evaluate" << std::endl;
+    // std::cout << "ProjectionFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2377,10 +2378,187 @@ ProjectionOneFrameTwoCamFactor::ProjectionOneFrameTwoCamFactor(const Eigen::Vect
 #endif
 };
 
+#if useFloatInEvaluate
+
 bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
+    // Here we translate double to float
     std::cout << "ProjectionOneFrameTwoCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
+    TicToc step_time;
+
+    Eigen::Vector3f tic((float)parameters[0][0], (float)parameters[0][1], (float)parameters[0][2]);
+    Eigen::Quaternionf qic((float)parameters[0][6], (float)parameters[0][3], (float)parameters[0][4], (float)parameters[0][5]);
+    Eigen::Vector3f tic2((float)parameters[1][0], (float)parameters[1][1], (float)parameters[1][2]);
+    Eigen::Quaternionf qic2((float)parameters[1][6], (float)parameters[1][3], (float)parameters[1][4], (float)parameters[1][5]);
+    
+    float inv_dep_i = (float)parameters[2][0];
+    float tf = (float)parameters[3][0];
+
+    Eigen::Vector3f pts_i_tf, pts_j_tf;
+    Eigen::Vector3f pts_if = matrixd2f(pts_i);
+    Eigen::Vector3f pts_jf = matrixd2f(pts_j);
+    Eigen::Vector3f velocity_if = matrixd2f(velocity_i);
+    Eigen::Vector3f velocity_jf = matrixd2f(velocity_j);
+    
+    pts_i_tf = pts_if - (tf - (float)td_i) * velocity_if;
+    pts_j_tf = pts_jf - (tf - (float)td_j) * velocity_jf;
+
+    Eigen::Vector3f pts_camera_i = pts_i_tf / inv_dep_i;
+    Eigen::Vector3f pts_imu_i = qic * pts_camera_i + tic;
+    Eigen::Vector3f pts_imu_j = pts_imu_i;
+    Eigen::Vector3f pts_camera_j = qic2.inverse() * (pts_imu_j - tic2);
+    std::cout << "flag9" << std::endl;
+    float residuals_f[2];
+    residuals_f[0] = (float)(*residuals);
+    residuals_f[1] = (float)(*(residuals+1));
+
+    Eigen::Map<Eigen::Vector2f> residual(residuals_f);
+    std::cout << "flag10" << std::endl;
+#ifdef UNIT_SPHERE_ERROR 
+    Eigen::Matrix<float, 2, 3> tangent_base_f = matrixd2f(tangent_base);
+    residual =  tangent_base_f * (pts_camera_j.normalized() - pts_j_tf.normalized());
+#else
+    float dep_j = pts_camera_j.z();
+    
+    std::cout << "flag10.3" << std::endl;
+    residual = (pts_camera_j / dep_j).head<2>() - pts_j_tf.head<2>();
+    std::cout << "flag11" << std::endl;
+#endif
+    static Eigen::Matrix2f sqrt_info_f = matrixd2f(sqrt_info);
+    residual = sqrt_info_f * residual;
+
+    std::cout << "Step1 costs: " << step_time.toc2() << " ms" << std::endl;
+    TicToc subStep_time;
+    if (jacobians)
+    {
+        Eigen::Matrix3f ric = qic.toRotationMatrix();
+        std::cout << "  Step2.1 costs: " << subStep_time.toc2() << " ms" << std::endl;
+        Eigen::Matrix3f ric2 = qic2.toRotationMatrix();
+        std::cout << "  Step2.2 costs: " << subStep_time.toc2() << " ms" << std::endl;
+        Eigen::Matrix<float, 2, 3> reduce(2, 3);
+        std::cout << "  Step2.3 costs: " << subStep_time.toc2() << " ms" << std::endl;
+#ifdef UNIT_SPHERE_ERROR
+        float norm = pts_camera_j.norm();
+        Eigen::Matrix3d norm_jaco;
+        double x1, x2, x3;
+        x1 = pts_camera_j(0);
+        x2 = pts_camera_j(1);
+        x3 = pts_camera_j(2);
+        norm_jaco << 1.0 / norm - x1 * x1 / pow(norm, 3), - x1 * x2 / pow(norm, 3),            - x1 * x3 / pow(norm, 3),
+                     - x1 * x2 / pow(norm, 3),            1.0 / norm - x2 * x2 / pow(norm, 3), - x2 * x3 / pow(norm, 3),
+                     - x1 * x3 / pow(norm, 3),            - x2 * x3 / pow(norm, 3),            1.0 / norm - x3 * x3 / pow(norm, 3);
+        reduce = tangent_base * norm_jaco;
+#else
+        reduce << 1. / dep_j, 0, -pts_camera_j(0) / (dep_j * dep_j),
+            0, 1. / dep_j, -pts_camera_j(1) / (dep_j * dep_j);
+        std::cout << "  Step2.4 costs: " << subStep_time.toc2() << " ms" << std::endl;
+#endif
+        reduce = sqrt_info_f * reduce;
+        std::cout << "  Step2.5 costs: " << subStep_time.toc2() << " ms" << std::endl;
+        std::cout << "Step2 costs: " << step_time.toc2() << " ms" << std::endl;
+
+        if (jacobians[0])
+        {
+            std::cout << "\n";
+            float jacobians0_f[14];
+            for(int i=0;i<14;i++){
+                jacobians0_f[i] = (float)(*(jacobians[0]+i));
+            }
+            Eigen::Map<Eigen::Vector2f> residual(residuals_f);
+            Eigen::Map<Eigen::Matrix<float, 2, 7, Eigen::RowMajor>> jacobian_ex_pose(jacobians0_f);
+            std::cout << "  Step3.1 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            Eigen::Matrix<float, 3, 6> jaco_ex;
+            std::cout << "  Step3.2 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jaco_ex.leftCols<3>() = ric2.transpose(); 
+            std::cout << "  Step3.3 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jaco_ex.rightCols<3>() = ric2.transpose() * ric * -Utility::skewSymmetric(pts_camera_i);
+            std::cout << "  Step3.4 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jacobian_ex_pose.leftCols<6>() = reduce * jaco_ex;
+            std::cout << "  Step3.5 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jacobian_ex_pose.rightCols<1>().setZero();
+            std::cout << "  Step3.6 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            for(int i=0;i<14;i++){
+                *(jacobians[0]+i) = (double)jacobians0_f[i];
+            }
+        }
+        std::cout << "Step3 costs: " << step_time.toc2() << " ms" << std::endl;
+        if (jacobians[1])
+        {
+            float jacobians1_f[14];
+            for(int i=0;i<14;i++){
+                jacobians1_f[i] = (float)(*(jacobians[1]+i));
+            }
+            Eigen::Map<Eigen::Vector2f> residual(residuals_f);
+            Eigen::Map<Eigen::Matrix<float, 2, 7, Eigen::RowMajor>> jacobian_ex_pose1(jacobians1_f);
+            std::cout << "  Step4.1 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            Eigen::Matrix<float, 3, 6> jaco_ex;
+            std::cout << "  Step4.2 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jaco_ex.leftCols<3>() = - ric2.transpose();
+            std::cout << "  Step4.3 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jaco_ex.rightCols<3>() = Utility::skewSymmetric(pts_camera_j);
+            std::cout << "  Step4.4 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jacobian_ex_pose1.leftCols<6>() = reduce * jaco_ex;
+            std::cout << "  Step4.5 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jacobian_ex_pose1.rightCols<1>().setZero();
+            std::cout << "  Step4.6 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            for(int i=0;i<14;i++){
+                *(jacobians[1]+i) = (double)jacobians1_f[i];
+            }
+        }
+        std::cout << "Step4 costs: " << step_time.toc2() << " ms" << std::endl;
+        if (jacobians[2])
+        {
+            float jacobians2_f[2];
+            jacobians2_f[0] = (float)(*jacobians[2]);
+            jacobians2_f[1] = (float)(*(jacobians[2]+1));
+            Eigen::Map<Eigen::Vector2f> residual(residuals_f);
+            Eigen::Map<Eigen::Vector2f> jacobian_feature(jacobians2_f);
+            std::cout << "  Step5.1 costs: " << subStep_time.toc2() << " ms" << std::endl;
+#if 1
+            jacobian_feature = reduce * ric2.transpose() * ric * pts_if * -1.0 / (inv_dep_i * inv_dep_i);
+            std::cout << "  Step5.2 costs: " << subStep_time.toc2() << " ms" << std::endl;
+#else
+            jacobian_feature = reduce * ric.transpose() * Rj.transpose() * Ri * ric * pts_i;
+#endif
+            for(int i=0;i<2;i++){
+                *(jacobians[2]+i) = (double)jacobians2_f[i];
+            }
+        }
+        std::cout << "Step5 costs: " << step_time.toc2() << " ms" << std::endl;
+        if (jacobians[3])
+        {
+            float jacobians3_f[2];
+            jacobians3_f[0] = (float)(*jacobians[3]);
+            jacobians3_f[1] = (float)(*(jacobians[3]+1));
+            Eigen::Map<Eigen::Vector2f> residual(residuals_f);
+            Eigen::Map<Eigen::Vector2f> jacobian_tf(jacobians3_f);
+            std::cout << "  Step6.1 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            jacobian_tf = reduce * ric2.transpose() * ric * velocity_if / inv_dep_i * -1.0  +
+                          sqrt_info_f * velocity_jf.head(2);
+            std::cout << "  Step6.2 costs: " << subStep_time.toc2() << " ms" << std::endl;
+            for(int i=0;i<2;i++){
+                *(jacobians[3]+i) = (double)jacobians3_f[i];
+            }
+        }
+    }
+
+    *residuals = (double)residuals_f[0];
+    *(residuals+1) = (double)residuals_f[1];
+
+    std::cout << "Step6 costs: " << step_time.toc2() << " ms" << std::endl;
+    sum_t += tic_toc.toc();
+
+    return true;
+}
+
+#else
+
+bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
+{
+    // std::cout << "ProjectionOneFrameTwoCamFactor::Evaluate" << std::endl;
+    TicToc tic_toc;
+    TicToc step_time;
 
     Eigen::Vector3d tic(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond qic(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2401,6 +2579,11 @@ bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, d
     Eigen::Vector3d pts_imu_j = pts_imu_i;
     Eigen::Vector3d pts_camera_j = qic2.inverse() * (pts_imu_j - tic2);
     Eigen::Map<Eigen::Vector2d> residual(residuals);
+    cout << "residuals | before : ";
+    for(int i=0;i<2;i++){
+        cout << *(residuals+i) << ", ";
+    }
+    cout << endl << endl;
 
 #ifdef UNIT_SPHERE_ERROR 
     residual =  tangent_base * (pts_camera_j.normalized() - pts_j_td.normalized());
@@ -2411,6 +2594,7 @@ bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, d
 
     residual = sqrt_info * residual;
 
+    std::cout << "Step1 costs: " << step_time.toc() << " ms" << std::endl;
     if (jacobians)
     {
         Eigen::Matrix3d ric = qic.toRotationMatrix();
@@ -2432,45 +2616,96 @@ bool ProjectionOneFrameTwoCamFactor::Evaluate(double const *const *parameters, d
             0, 1. / dep_j, -pts_camera_j(1) / (dep_j * dep_j);
 #endif
         reduce = sqrt_info * reduce;
-
+        std::cout << "Step2 costs: " << step_time.toc() << " ms" << std::endl;
         if (jacobians[0])
         {
+            cout << "jacobians[0] | before : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[0]+i) << ", ";
+            }
+            cout << endl;
             Eigen::Map<Eigen::Matrix<double, 2, 7, Eigen::RowMajor>> jacobian_ex_pose(jacobians[0]);
             Eigen::Matrix<double, 3, 6> jaco_ex;
             jaco_ex.leftCols<3>() = ric2.transpose(); 
             jaco_ex.rightCols<3>() = ric2.transpose() * ric * -Utility::skewSymmetric(pts_camera_i);
             jacobian_ex_pose.leftCols<6>() = reduce * jaco_ex;
             jacobian_ex_pose.rightCols<1>().setZero();
+            cout << "jacobians[0] | after : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[0]+i) << ", ";
+            }
+            cout << endl << endl;
         }
+        std::cout << "Step3 costs: " << step_time.toc() << " ms" << std::endl;
         if (jacobians[1])
         {
+            cout << "jacobians[1] | before : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[1]+i) << ", ";
+            }
+            cout << endl << endl;
             Eigen::Map<Eigen::Matrix<double, 2, 7, Eigen::RowMajor>> jacobian_ex_pose1(jacobians[1]);
             Eigen::Matrix<double, 3, 6> jaco_ex;
             jaco_ex.leftCols<3>() = - ric2.transpose();
             jaco_ex.rightCols<3>() = Utility::skewSymmetric(pts_camera_j);
             jacobian_ex_pose1.leftCols<6>() = reduce * jaco_ex;
             jacobian_ex_pose1.rightCols<1>().setZero();
+            cout << "jacobians[1] | after : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[1]+i) << ", ";
+            }
+            cout << endl << endl;
         }
+        std::cout << "Step4 costs: " << step_time.toc() << " ms" << std::endl;
         if (jacobians[2])
         {
+            cout << "jacobians[2] | before : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[2]+i) << ", ";
+            }
+            cout << endl;
             Eigen::Map<Eigen::Vector2d> jacobian_feature(jacobians[2]);
 #if 1
             jacobian_feature = reduce * ric2.transpose() * ric * pts_i * -1.0 / (inv_dep_i * inv_dep_i);
 #else
             jacobian_feature = reduce * ric.transpose() * Rj.transpose() * Ri * ric * pts_i;
 #endif
+            cout << "jacobians[2] | after : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[2]+i) << ", ";
+            }
+            cout << endl << endl;
         }
+        std::cout << "Step5 costs: " << step_time.toc() << " ms" << std::endl;
         if (jacobians[3])
         {
+            cout << "jacobians[3] | before : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[3]+i) << ", ";
+            }
+            cout << endl;
             Eigen::Map<Eigen::Vector2d> jacobian_td(jacobians[3]);
             jacobian_td = reduce * ric2.transpose() * ric * velocity_i / inv_dep_i * -1.0  +
                           sqrt_info * velocity_j.head(2);
+            cout << "jacobians[3] | after : ";
+            for(int i=0;i<14;i++){
+                cout << *(jacobians[3]+i) << ", ";
+            }
+            cout << endl << endl;
         }
     }
+    cout << "residuals | after : ";
+    for(int i=0;i<2;i++){
+        cout << *(residuals+i) << ", ";
+    }
+    cout << endl << endl;
+    std::cout << "Step6 costs: " << step_time.toc() << " ms" << std::endl;
     sum_t += tic_toc.toc();
 
     return true;
 }
+
+#endif
 
 void ProjectionOneFrameTwoCamFactor::check(double **parameters)
 {
@@ -2617,7 +2852,7 @@ ProjectionTwoFrameOneCamFactor::ProjectionTwoFrameOneCamFactor(const Eigen::Vect
 
 bool ProjectionTwoFrameOneCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
-    std::cout << "ProjectionTwoFrameOneCamFactor::Evaluate" << std::endl;
+    // std::cout << "ProjectionTwoFrameOneCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2878,7 +3113,7 @@ ProjectionTwoFrameTwoCamFactor::ProjectionTwoFrameTwoCamFactor(const Eigen::Vect
 
 bool ProjectionTwoFrameTwoCamFactor::Evaluate(double const *const *parameters, double *residuals, double **jacobians) const
 {
-    std::cout << "ProjectionTwoFrameTwoCamFactor::Evaluate" << std::endl;
+    // std::cout << "ProjectionTwoFrameTwoCamFactor::Evaluate" << std::endl;
     TicToc tic_toc;
     Eigen::Vector3d Pi(parameters[0][0], parameters[0][1], parameters[0][2]);
     Eigen::Quaterniond Qi(parameters[0][6], parameters[0][3], parameters[0][4], parameters[0][5]);
@@ -2911,6 +3146,12 @@ bool ProjectionTwoFrameTwoCamFactor::Evaluate(double const *const *parameters, d
     residual =  tangent_base * (pts_camera_j.normalized() - pts_j_td.normalized());
 #else
     double dep_j = pts_camera_j.z();
+
+    // auto division = pts_camera_j / dep_j;
+    // auto k1 = division.head<2>();
+    // auto k2 = pts_j_td.head<2>();
+    // residual = k1 - k2;
+
     residual = (pts_camera_j / dep_j).head<2>() - pts_j_td.head<2>();
 #endif
 
@@ -5024,21 +5265,23 @@ void Estimator::optimization()
         static vector<float> preprocessor_time;
         static vector<float> minimizer_time;
         static vector<float> postprocessor_time;
-        static vector<float> total_time;
         cout << "********************************************************" << endl;
         cout << summary.BriefReport() << endl;
         printf("Iterations : %d \n", static_cast<int>(summary.iterations.size()));
         printf("solver costs: %f \n", t_solver.toc());
-        printf("preprocessor costs:%f \n", summary.preprocessor_time_in_seconds);
-        printf("minimizer costs:%f \n", summary.minimizer_time_in_seconds);
-        printf("postprocessor costs:%f \n", summary.postprocessor_time_in_seconds);
+        // printf("preprocessor costs:%f \n", summary.preprocessor_time_in_seconds);
+        // printf("minimizer costs:%f \n", summary.minimizer_time_in_seconds);
+        // printf("postprocessor costs:%f \n", summary.postprocessor_time_in_seconds);
         printf("total costs:%f \n", summary.total_time_in_seconds);
         cout << "********************************************************" << endl;
         // preprocessor_time.push_back(summary.preprocessor_time_in_seconds);
         // minimizer_time.push_back(summary.minimizer_time_in_seconds);
         // postprocessor_time.push_back(summary.postprocessor_time_in_seconds);
-        // total_time.push_back(summary.total_time_in_seconds);
-
+        ofstream myfile;
+        myfile.open (TEST_INFO_FILE_NAME, ios::app);
+        myfile << setprecision(6) << summary.total_time_in_seconds << "\n";
+        myfile.close();
+        
         // std::cout << "Time cost on preprocessor:" << std::endl;
         // for(auto &time:preprocessor_time){
         //     std::cout << setprecision(3) << time << ",";

@@ -1,5 +1,11 @@
 #include "tools.h"
 
+#include <cmath>
+#include "matplotlibcpp.h"
+
+using namespace std;
+namespace plt = matplotlibcpp;
+
 
 #define _USE_MATH_DEFINES
 #define SHOW_UNDISTORTION 0

@@ -39,6 +39,11 @@ add_library(vio_lib_gpu SHARED
     )
 target_link_libraries(vio_lib_gpu camera_models ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
 
+include_directories(
+    /usr/include/python3.8
+)
+
 add_executable(vins_estimator
     src/main.cpp)
 target_link_libraries(vins_estimator vio_lib_gpu camera_models ${OpenCV_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(vins_estimator python3.8)

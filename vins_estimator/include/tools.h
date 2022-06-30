@@ -52,6 +52,7 @@ using namespace camodocal;
 using namespace Eigen;
 
 #define LOG_FILE_NAME "VIO.txt"
+#define TEST_INFO_FILE_NAME "TextInfo.txt"
 
 //parameters //TODO
 const double FOCAL_LENGTH = 460.0;
@@ -226,6 +227,54 @@ Eigen::VectorXd matrixf2d(Eigen::VectorXf V){
     return Vd;
 }
 
+Eigen::MatrixXf matrixd2f(const Matrix2d& M){
+    int row = M.rows();
+    int col = M.cols();
+    Eigen::MatrixXf Mf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Mf(i,j)=(float)M(i,j);
+        }
+    }
+    return Mf;
+}
+
+Eigen::VectorXf matrixd2f(const Vector2d& V){
+    int row = V.rows();
+    int col = V.cols();
+    Eigen::MatrixXf Vf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Vf(i,j)=(float)V(i,j);
+        }
+    }
+    return Vf;
+}
+
+Eigen::MatrixXf matrixd2f(const Matrix3d& M){
+    int row = M.rows();
+    int col = M.cols();
+    Eigen::MatrixXf Mf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Mf(i,j)=(float)M(i,j);
+        }
+    }
+    return Mf;
+}
+
+Eigen::VectorXf matrixd2f(const Vector3d& V){
+    int row = V.rows();
+    int col = V.cols();
+    Eigen::MatrixXf Vf(row,col);
+    for(int i=row-1;i>=0;i--){
+        for(int j=col-1;j>=0;j--){
+            Vf(i,j)=(float)V(i,j);
+        }
+    }
+    return Vf;
+}
+
 enum SIZE_PARAMETERIZATION
 {
     SIZE_POSE = 7,
@@ -268,6 +317,14 @@ class TicToc
     {
         end = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = end - start;
+        return elapsed_seconds.count() * 1000;
+    }
+
+    double toc2()
+    {
+        end = std::chrono::system_clock::now();
+        std::chrono::duration<double> elapsed_seconds = end - start;
+        start = end;
         return elapsed_seconds.count() * 1000;
     }
 
@@ -1451,6 +1508,8 @@ class Estimator
 
     bool initFirstPoseFlag;
     bool initThreadFlag;
+
+    // vector<float> ceresSolveTimeRecord;
 };
 //estimator
 
@@ -1458,4 +1517,5 @@ class Estimator
 extern int IMAGE_ROW, IMAGE_COL;
 void printStatistics(const Estimator &estimator, double t);
 void pubOdometry(const Estimator &estimator, const std_msgs::Header &header);
+// void pubTestInfo(const Estimator &estimator, const std_msgs::Header &header);
 //visualization //TODO

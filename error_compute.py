@@ -10,6 +10,7 @@ from matplotlib import pyplot as plt
 import transformation_3d as t3d
 
 es_poses_path = "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/VIO.txt"
+test_info_path = "/home/lj/Documents/vins-fusion-gpu-no-ros/vins_estimator/build/TextInfo.txt"
 gt_poses_path = "/home/lj/data/V1_01_easy/mav0/state_groundtruth_estimate0/data.csv"
 
 interpolation_flag = 1
@@ -283,23 +284,30 @@ class TimeRegistration():
         ax.set_xlabel("frame id")
         ax.set_ylabel("distance /m")
 
+def DrawTestInfo():
+    with open(test_info_path) as f:
 
+        timelist = []
+        time_total = 0.0
+        contents = f.readlines()
+        for line in contents:
+            timelist.append(float(line))
+            time_total += timelist[-1]
+
+        print("\naverage_time = ", time_total/len(timelist))
+        fig2 = plt.figure()
+        ax = fig2.add_axes([0.1,0.1,0.8,0.8])
+        l1 = ax.plot(range(len(timelist)),timelist)
+        ax.legend(labels = ("ceres_Solve_time"), loc = 'upper left')
+        ax.set_title("test_info")
+        ax.set_xlabel("frame id")
+        ax.set_ylabel("time /ms")
 
 def main(args=None):
     time_registration = TimeRegistration()
     time_registration.register()
     time_registration.computeError()
-    # print("Estimated poses")
-    # time_registration.es_poses_selected[367].printValue()
-    # time_registration.es_poses_selected[368].printValue()
-    # print("Processed ground truth")
-    # time_registration.gt_poses_selected[367].printValue()
-    # time_registration.gt_poses_selected[368].printValue()
-
-    # print(Pose.init1("1403715323.012144 -0.829233 -3.422542 0.505557 0.549673 0.131937 -0.821679 0.072769 -0.468353 0.379462 0.040375 ",TimeStampEstimated).transformation())
-
-    # 完成时间同步
-    # 计算相对位姿误差
+    DrawTestInfo()
 
 
 if __name__ == '__main__':
